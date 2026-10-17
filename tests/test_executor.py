@@ -446,3 +446,46 @@ def test_total_result_size_capped(db: Path) -> None:
 def test_max_rows_zero(db: Path) -> None:
     result = execute("SELECT id FROM t", db, max_rows=0)
     assert result.rows == [] and result.truncated is True
+
+
+# --------------------------------------------------------------------------- reverse_unordered (kiểm dataset)
+
+
+def test_reverse_unordered_flips_scan_order(db: Path) -> None:
+    sql = "SELECT id FROM t LIMIT 3"
+    assert execute(sql, db).rows == [(1,), (2,), (3,)]
+    assert execute(sql, db, reverse_unordered=True).rows == [(N_ROWS,), (N_ROWS - 1,), (N_ROWS - 2,)]
+
+
+def test_reverse_unordered_keeps_explicit_order(db: Path) -> None:
+    sql = "SELECT id FROM t ORDER BY id LIMIT 3"
+    assert execute(sql, db, reverse_unordered=True).rows == execute(sql, db).rows
+
+
+def test_reverse_unordered_is_off_by_default(db: Path) -> None:
+    """Pipeline chấm model gọi execute() không có cờ → thứ tự quét bình thường."""
+    assert execute("SELECT id FROM t LIMIT 1", db).rows == [(1,)]
+
+
+@pytest.mark.parametrize("sql", [
+    "DROP TABLE t", "PRAGMA reverse_unordered_selects = OFF", "DELETE FROM t",
+    "SELECT * FROM pragma_reverse_unordered_selects", "SELECT * FROM pragma_table_info('t')",
+    "SELECT 1; PRAGMA writable_schema = ON",
+])
+def test_reverse_unordered_does_not_weaken_layers(db: Path, sql: str) -> None:
+    """Cờ chỉ chạy một PRAGMA cố định trước khi cài authorizer; SQL đầu vào vẫn bị chặn như cũ."""
+    before = snapshot(db)
+    assert_rejected(execute(sql, db, reverse_unordered=True))
+    assert_rejected(executor._run(sql, db, timeout_s=5.0, max_rows=1000, reverse_unordered=True))
+    assert snapshot(db) == before
+
+
+def test_reverse_unordered_keeps_timeout_and_row_limit(db: Path) -> None:
+    assert "timeout" in execute(INFINITE_SQL, db, timeout_s=0.2, reverse_unordered=True).error.lower()
+    result = execute("SELECT id FROM t", db, reverse_unordered=True)
+    assert len(result.rows) == 1000 and result.truncated is True
+
+
+def test_reverse_unordered_does_not_leak_to_next_call(db: Path) -> None:
+    execute("SELECT id FROM t LIMIT 1", db, reverse_unordered=True)
+    assert execute("SELECT id FROM t LIMIT 1", db).rows == [(1,)]  # mỗi lần gọi mở kết nối mới

@@ -1,0 +1,6 @@
+# Pin đúng phiên bản: output của Faker đổi theo phiên bản → DB (seed 42) chỉ tái lập được với đúng bản này.
+Faker==40.40.0
+sqlglot==30.21.0
+anthropic==1.11.0
+python-dotenv==1.2.4
+pytest==9.1.1

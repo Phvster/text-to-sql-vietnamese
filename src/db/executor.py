@@ -79,12 +79,17 @@ def _failure(message: str) -> ExecResult:
 
 
 def execute(sql: str, db_path: Path = DEFAULT_DB, timeout_s: float = TIMEOUT_S,
-            max_rows: int = MAX_ROWS) -> ExecResult:
-    """Chạy một câu SELECT trên DB chỉ đọc. Tham số ngoài `sql` chỉ để test (DB tạm, timeout ngắn)."""
+            max_rows: int = MAX_ROWS, *, reverse_unordered: bool = False) -> ExecResult:
+    """Chạy một câu SELECT trên DB chỉ đọc. Tham số ngoài `sql` chỉ để test (DB tạm, timeout ngắn).
+
+    reverse_unordered=True: SQLite đảo thứ tự quét bảng ở chỗ câu lệnh không ép thứ tự. Chỉ dùng để
+    KIỂM ĐÁP ÁN dataset (scripts/check_dataset.py): kết quả đổi khi đảo → đáp án không ổn định.
+    Pipeline chấm model không bật cờ này. Cờ do code của ta đặt, SQL đầu vào vẫn không chạy được PRAGMA.
+    """
     error = _validate(sql)
     if error is not None:
         return _failure(error)  # bị từ chối trước khi chạm vào DB
-    return _run(sql, db_path, timeout_s, max_rows)
+    return _run(sql, db_path, timeout_s, max_rows, reverse_unordered=reverse_unordered)
 
 
 # --------------------------------------------------------------------------- lớp 1 + 2: kiểm tra văn bản
@@ -141,12 +146,13 @@ def _check_read_only(statement: exp.Expression) -> str | None:
 # --------------------------------------------------------------------------- lớp 3 + 4 + 5: SQLite tự chặn
 
 
-def _run(sql: str, db_path: Path, timeout_s: float, max_rows: int) -> ExecResult:
+def _run(sql: str, db_path: Path, timeout_s: float, max_rows: int, *,
+         reverse_unordered: bool = False) -> ExecResult:
     """Chạy SQL với lớp 3–5. Không gọi lớp 1–2: các lớp này phải tự đứng vững (có test riêng)."""
     timed_out: list[bool] = []
     conn: sqlite3.Connection | None = None
     try:
-        conn = _connect(db_path, timeout_s)
+        conn = _connect(db_path, timeout_s, reverse_unordered=reverse_unordered)
         _install_timeout(conn, timeout_s, timed_out)
         cursor = conn.execute(sql)
         columns = [d[0] for d in cursor.description or []]
@@ -165,7 +171,7 @@ def _run(sql: str, db_path: Path, timeout_s: float, max_rows: int) -> ExecResult
             conn.close()
 
 
-def _connect(db_path: Path, timeout_s: float) -> sqlite3.Connection:
+def _connect(db_path: Path, timeout_s: float, *, reverse_unordered: bool = False) -> sqlite3.Connection:
     """LỚP 3 — DB chỉ đọc. Hai chốt:
 
     - mode=ro: SQLite mở file ở chế độ chỉ đọc; cũng không tạo file mới nếu DB không tồn tại.
@@ -176,6 +182,10 @@ def _connect(db_path: Path, timeout_s: float) -> sqlite3.Connection:
     """
     uri = f"{Path(db_path).resolve().as_uri()}?mode=ro"
     conn = sqlite3.connect(uri, uri=True, timeout=timeout_s)
+    if reverse_unordered:
+        # Phải chạy TRƯỚC khi cài authorizer (authorizer chặn mọi PRAGMA). Câu PRAGMA là hằng số
+        # trong code, không lấy từ SQL đầu vào.
+        conn.execute("PRAGMA reverse_unordered_selects = ON")
     conn.set_authorizer(_authorize)
     # Giá trị nhỏ → hàm chuỗi chạy nhanh → timeout (chỉ ngắt được giữa các lệnh) vẫn hiệu quả.
     conn.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_VALUE_BYTES)
