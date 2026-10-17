@@ -1,26 +1,39 @@
 # Nhật ký tiến độ
 ## Trạng thái hiện tại
-Target: T1 (hạ tầng) — xong cả 4 phần: schema, generate_db.py, executor, evaluator (executor và evaluator đã qua reviewer). Chưa commit.
+Target: T2 (bộ câu hỏi). T1 xong, đã commit và push (`origin/main`, repo private). Hạ tầng T2 xong, chưa commit.
+Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp án.
 
 ## Phiên gần nhất (2026-10-16)
 ### Đã làm xong
-- `src/eval/evaluator.py`: `evaluate(gold_sql, pred_sql) -> EvalOutcome(correct, reason)`; `compare_results` thuần (không cần DB); `has_order_by`.
-- `tests/test_evaluator.py`: 74 test. `pytest -q`: 222 passed.
-- Reviewer tìm 2 lỗi nghiêm trọng (ghép cột treo theo hàm mũ: 11 cột mất 27s; trần 1000 cách ghép làm câu đúng bị chấm sai) + `ORDER BY` bị bỏ qua khi đáp án có comment sau `;` + `ORDER BY NULL`. Đã sửa hết, có test hồi quy.
-- Đã trả lời 6 câu hỏi về executor (2026-10-07); cần đọc lại câu 3 (`max_rows + 1`) và câu 6 (test hệ nhiều lớp).
+- T1: evaluator + reviewer; commit thành 5 commit, xóa `Kế hoạch.docx` khỏi lịch sử, `*.docx` vào `.gitignore`; push lên GitHub (private).
+- `requirements.txt` (pin phiên bản, Faker==40.40.0).
+- `docs/dataset.md`: định dạng JSONL, độ khó, tag, 10 quy ước viết đáp án, bảng mã lỗi.
+- `src/eval/dataset.py` + `scripts/check_dataset.py`: kiểm định dạng, chạy đáp án qua executor, cảnh báo đáp án rỗng / không ổn định.
+- `scripts/try_sql.py`: chạy thử SQL khi viết đáp án.
+- Executor thêm cờ `reverse_unordered` (chỉ cho kiểm dataset). Reviewer: không làm yếu lớp an toàn nào; các lỗi ở phần kiểm đáp án đã sửa.
+- `data/questions/dev_drafts.md`: 60 câu nháp dev + 12 mơ hồ + 12 độc hại, KHÔNG có SQL.
+- `pytest -q`: 275 passed.
+
+### Cập nhật 2026-10-17
+- Đã sửa lời câu hỏi dev trong `dev_drafts.md` (Claude sửa thêm lỗi chính tả, làm rõ M10).
+- Chốt: câu độc hại dạng ghép → từ chối cả câu. `malicious.jsonl` xong (12 câu, check_dataset: 0 ERROR, 0 WARN).
+- Viết nháp SQL cho 12 câu mơ hồ: 9/12 lỗi khi chạy. Lỗi chính: tên bảng sai (`customer`, `product`, `order`),
+  ký tự Word (`‘ ” ≥ ≤`), ngày `'2025-1-1'` và cận `<= '2025-12-31'`, thiếu khóa phụ, `convention` chưa ghi.
+  → Đã thêm quy ước ngày tháng vào `docs/dataset.md` (mục 9, 10).
+- Claude không viết/sửa SQL đáp án (guardrail CLAUDE.md), chỉ chỉ ra lỗi.
 
 ### Đang vướng / làm dở
-- **Chưa commit gì** từ sau commit khởi tạo `213ea56`.
-- Danh sách test executor và evaluator do Claude đề xuất → tôi cần đọc lại để chắc khớp ý.
-- Chưa trả lời 5 câu hỏi kiểm tra hiểu bài về evaluator.
-- Chưa làm bài tập SQL: đếm số đơn của mỗi khách, khách chưa mua vẫn hiện 0 (`COUNT(*)` vs `COUNT(o.order_id)`).
+- Chưa có `dev.jsonl` / `test.jsonl` / `ambiguous.jsonl` (cần SQL do tôi viết).
+- Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.
+- Câu hỏi kiểm tra hiểu bài: đã chấm 5 câu về hạ tầng dataset (2026-10-17); còn 5 câu về evaluator.
+- Chưa làm bài tập SQL `COUNT(*)` vs `COUNT(o.order_id)`.
 - Timeout executor còn vượt được trong 1 trường hợp cố tình — chưa quyết định có làm tiến trình con hay không.
-- Chưa có `requirements.txt`.
+- Danh sách test do Claude đề xuất → tôi cần đọc lại để chắc khớp ý.
 
 ### Việc đầu tiên khi mở lại
-1. `pytest -q` (phải 222 passed) rồi commit toàn bộ T1.
-2. Trả lời 5 câu hỏi về evaluator (đọc `src/eval/evaluator.py` trước).
-3. Tạo `requirements.txt`, rồi bắt đầu T2 (bộ câu hỏi) theo quy ước dataset bên dưới.
+1. Đọc lại `docs/dataset.md` mục 9–10, sửa 12 câu SQL mơ hồ bằng `try_sql.py`, ghi vào `ambiguous.jsonl`.
+2. Viết SQL cho 50 câu dev → `dev.jsonl`, chạy `check_dataset.py` tới khi 0 ERROR.
+3. Quyết định trước khi viết test: giữ 150 câu hay giảm còn 120 (phương án dự phòng trong PROJECT.md).
 
 ## Quyết định đã chốt
 ### DB
@@ -44,6 +57,11 @@ Target: T1 (hạ tầng) — xong cả 4 phần: schema, generate_db.py, executo
 - Ghép cột: có thứ tự → so đa tập vector cột (chính xác, không tìm kiếm); không thứ tự → quay lui có cắt nhánh
   (chữ ký cột + chiếu dòng), trần 2000 bước → `mapping_limit` (đếm riêng, không lẫn vào mismatch).
 - `has_order_by` dùng chung `_parse_single` với executor; `ORDER BY NULL`/`'x'` không tính, `ORDER BY 1` có tính.
+### Dataset (T2)
+- Định dạng và quy ước đầy đủ: `docs/dataset.md`. Claude soạn nháp câu hỏi dev (không SQL); câu hỏi test tôi tự nghĩ.
+- `check_dataset.py` mặc định chỉ in id + mã lỗi (chạy được trên test.jsonl). Claude không chạy nó trên test.jsonl.
+- Kiểm "ổn định" của đáp án: (1) chạy lại với `PRAGMA reverse_unordered_selects` qua cờ `reverse_unordered` của executor;
+  (2) thêm khóa phụ tăng/giảm vào ORDER BY ngoài cùng và ORDER BY + LIMIT trong subquery. Không bắt được GROUP_CONCAT trong nhóm.
 ### Quy ước viết dataset (T2) — rút ra từ evaluator
 - SQL đáp án có ORDER BY phải có khóa phụ phá hòa (vd `ORDER BY doanh_thu DESC, customer_id`), kể cả khi có LIMIT.
 - Tránh đáp án rỗng (mọi SQL trả rỗng đều được chấm đúng) và đáp án > 1000 dòng (`gold_truncated`).
@@ -57,10 +75,12 @@ Target: T1 (hạ tầng) — xong cả 4 phần: schema, generate_db.py, executo
 - Pipeline (T3): phải tự bóc khối ```sql ... ``` và ký tự BOM/NBSP khỏi output LLM trước khi gọi execute().
 - Không chạy generate_db.py song song với đánh giá (DB bị khóa → execute trả lỗi).
 ## Việc tiếp theo
-- Tạo requirements.txt (pin phiên bản, đặc biệt faker==40.40.0).
-- T2: bộ câu hỏi 50 dev / 150 test + bộ mơ hồ + bộ độc hại (SQL đáp án do tôi tự viết và kiểm).
+- T2: viết 50 dev / 150 test + ~10 mơ hồ + ~10 độc hại (SQL đáp án do tôi tự viết và kiểm).
+- T3: pipeline C0, C1, C2 trên dev (nhớ bóc khối ```sql``` khỏi output LLM).
 ## Log
 - 2026-10-02: tạo repo.
 - 2026-10-05: docs/schema.md, scripts/generate_db.py, tests/test_generate_db.py (8 test pass).
 - 2026-10-06: src/db/executor.py + tests/test_executor.py; reviewer tìm 3 lỗi nghiêm trọng (raise, bộ nhớ, timeout hàm chuỗi), đã sửa/giảm thiểu; 148 test pass.
-- 2026-10-16: src/eval/evaluator.py + tests/test_evaluator.py; reviewer tìm 2 lỗi nghiêm trọng (ghép cột treo, trần ghép cột chấm sai) + 2 lỗi has_order_by, đã sửa; 222 test pass. Xong T1 (chưa commit).
+- 2026-10-16: src/eval/evaluator.py + tests/test_evaluator.py; reviewer tìm 2 lỗi nghiêm trọng (ghép cột treo, trần ghép cột chấm sai) + 2 lỗi has_order_by, đã sửa; 222 test pass. Xong T1, commit + push (private).
+- 2026-10-16: hạ tầng T2 (dataset.md, check_dataset.py, try_sql.py, cờ reverse_unordered, dev_drafts.md); reviewer không thấy lỗi an toàn, sửa 2 lỗi bỏ sót đáp án không ổn định; 275 test pass.
+- 2026-10-17: malicious.jsonl (12 câu); chốt quy ước câu ghép; nhận xét nháp SQL câu mơ hồ; thêm quy ước ngày tháng vào dataset.md.
