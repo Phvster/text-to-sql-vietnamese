@@ -35,7 +35,7 @@ Bộ test (150 câu) bạn tự nghĩ, đừng lấy từ file này — để Cl
 | M6 | Hãy cho biết trong năm 2024, tháng nào có nhiều đơn hàng nhất? | group_by, date |
 | M7 | Có bao nhiêu đơn hàng giao tới thành phố khác với thành phố của khách? | join |
 | M8 | Hãy tính doanh thu từ những khách hàng ở Huế trong năm 2025 | join, value_mismatch, date |
-| M9 | Hãy cho tôi biết tất cả những thương hiệu có trên 10 sản phẩm | group_by, having |
+| M9 | Hãy cho tôi biết tất cả những thương hiệu có trên 5 sản phẩm | group_by, having |
 | M10 | Sản phẩm nào bán được nhiều cái nhất (tính trên toàn bộ đơn hàng)? | join, group_by |
 | M11 | Mỗi năm có bao nhiêu khách hàng đăng ký mới? | group_by, date |
 | M12 | Trung bình mỗi đơn hàng có mấy loại sản phẩm? | subquery |

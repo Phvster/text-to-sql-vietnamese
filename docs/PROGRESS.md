@@ -22,8 +22,26 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   → Đã thêm quy ước ngày tháng vào `docs/dataset.md` (mục 9, 10).
 - Claude không viết/sửa SQL đáp án (guardrail CLAUDE.md), chỉ chỉ ra lỗi.
 
+### Cập nhật 2026-10-18
+- `ambiguous.jsonl`: Claude sửa phần không phải SQL (id → amb-01..12, thêm difficulty/tags, chính tả). Còn 8 ERROR, đều ở SQL.
+  Lỗi chạy được nhưng sai: amb-06 viết 'Bà Rịa-Vũng Tàu' (DB: 'Bà Rịa - Vũng Tàu') → đếm thiếu cả tỉnh;
+  amb-08 ngưỡng 1,5 triệu → 79% đơn là "lớn"; amb-12 convention loại đơn hủy nhưng SQL không lọc.
+- `dev.jsonl`: Claude tạo khung 60 câu từ dev_drafts.md (`sql` trống, difficulty/tags dự kiến). Tôi bỏ bớt ~10 câu, điền SQL.
+
+### Cập nhật 2026-10-24
+- Lỡ xóa dev-031..060 (file chưa commit) → Claude tạo lại từ dev_drafts.md (sql trống). **Nhớ commit thường xuyên.**
+- Tôi đã viết SQL dev-001..030: 0 ERROR. Lỗi logic còn lại: dev-001 ('Sài Gòn'), dev-010 ('VIP'), dev-023 ('Huế')
+  dùng cách nói thay vì giá trị trong DB; dev-018, dev-023 chưa loại đơn hủy; nhiều câu thừa cột hoặc thừa ORDER BY.
+- dev-024: đổi lời câu hỏi "trên 10" → "trên 5 sản phẩm" (thương hiệu nhiều nhất chỉ có 9 sản phẩm). SQL cần sửa theo.
+
+### Cập nhật 2026-10-25
+- Tôi viết xong SQL 60 câu dev: 0 ERROR, 3 WARN. Claude kiểm logic: 5 câu sai kết quả (001, 018, 031, 056, 059),
+  3 câu yếu nên bỏ (039, 048 rỗng; 042 đáp án = số sản phẩm đã bán), 3 quy ước chưa nhất quán
+  (có loại đơn hủy khi tính bán/chi tiêu; tỷ lệ dạng 0–1 hay %; tháng dạng số hay chuỗi).
+- Claude sửa không đụng SQL: tag dev-038, lời câu hỏi dev-040.
+
 ### Đang vướng / làm dở
-- Chưa có `dev.jsonl` / `test.jsonl` / `ambiguous.jsonl` (cần SQL do tôi viết).
+- `dev.jsonl`: sửa 5 câu sai, chốt 3 quy ước, bỏ 10 câu còn 50. **Chưa commit lần nào.** `test.jsonl` chưa có.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.
 - Câu hỏi kiểm tra hiểu bài: đã chấm 5 câu về hạ tầng dataset (2026-10-17); còn 5 câu về evaluator.
 - Chưa làm bài tập SQL `COUNT(*)` vs `COUNT(o.order_id)`.
