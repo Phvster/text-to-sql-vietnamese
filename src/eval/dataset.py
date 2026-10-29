@@ -68,8 +68,9 @@ def load_jsonl(path: Path) -> tuple[list[dict], list[Issue]]:
 # --------------------------------------------------------------------------- kiểm định dạng
 
 
-def check_fields(record: dict, kind: str, label: str) -> list[Issue]:
-    """Kiểm trường bắt buộc và giá trị hợp lệ. label = id dùng để báo lỗi."""
+def check_fields(record: dict, kind: str, label: str, require_sql: bool = True) -> list[Issue]:
+    """Kiểm trường bắt buộc và giá trị hợp lệ. label = id dùng để báo lỗi.
+    require_sql=False: giai đoạn mới viết câu hỏi, chưa có SQL."""
     issues: list[Issue] = []
 
     def need_str(field: str) -> None:
@@ -86,7 +87,8 @@ def check_fields(record: dict, kind: str, label: str) -> list[Issue]:
             issues.append(Issue(label, "WARN", "W_MALICIOUS_SQL", 'malicious nên có "sql": null'))
         return issues
 
-    need_str("sql")
+    if require_sql:
+        need_str("sql")
     if kind == "ambiguous":
         need_str("convention")
     if record.get("difficulty") not in DIFFICULTIES:
@@ -200,7 +202,9 @@ def normalize_question(text: str) -> str:
     return re.sub(r"\s+", " ", text.casefold()).strip().rstrip("?.!")
 
 
-def check_file(path: Path, db_path: Path = DEFAULT_DB, run_sql: bool = True) -> tuple[list[dict], list[Issue]]:
+def check_file(path: Path, db_path: Path = DEFAULT_DB, run_sql: bool = True,
+               questions_only: bool = False) -> tuple[list[dict], list[Issue]]:
+    """questions_only=True: chỉ kiểm câu hỏi (chưa cần SQL) — không đòi trường sql, không chạy SQL."""
     kind = kind_of(path)
     records, issues = load_jsonl(path)
     id_counts = Counter(r["id"] for r in records if isinstance(r.get("id"), str))  # id sai kiểu → E_FIELD
@@ -209,12 +213,89 @@ def check_file(path: Path, db_path: Path = DEFAULT_DB, run_sql: bool = True) -> 
         label = record["id"] if has_str_id else f"{path.name}:{record['_line']}"
         if has_str_id and id_counts[record["id"]] > 1:
             issues.append(Issue(label, "ERROR", "E_ID_DUP"))
-        field_issues = check_fields(record, kind, label)
+        field_issues = check_fields(record, kind, label, require_sql=not questions_only)
         issues.extend(field_issues)
+        # Câu độc hại không cần rõ nghĩa; câu mơ hồ thì cố ý mơ hồ → chỉ kiểm lời ở dev/test.
+        if kind in ("dev", "test") and isinstance(record.get("question"), str):
+            issues.extend(check_question_wording(record["question"], label))
         has_field_error = any(i.code in ("E_FIELD",) for i in field_issues)
-        if run_sql and kind != "malicious" and not has_field_error:
+        if run_sql and not questions_only and kind != "malicious" and not has_field_error:
             issues.extend(check_answer(record["sql"], label, db_path))
     return records, issues
+
+
+# --------------------------------------------------------------------------- kiểm lời câu hỏi
+# Chỉ là cảnh báo để TỰ đọc lại — không phải mọi câu bị báo đều sai.
+
+# Mốc thời gian tương đối: dữ liệu kết thúc 31/12/2025, model không biết "hôm nay" là ngày nào.
+RELATIVE_TIME = ("gần đây", "năm nay", "năm ngoái", "tháng này", "tháng trước", "tuần này",
+                 "tuần trước", "hôm nay", "hôm qua", "dạo này")
+# Từ định tính không có ngưỡng. Đi kèm "nhất" (đắt nhất, lớn nhất) thì rõ nghĩa → không báo.
+VAGUE_WORDS = ("đắt", "rẻ", "lớn", "nhỏ", "tốt", "kém", "cao", "thấp", "nhiều", "ít",
+               "bán chạy", "trung thành", "thân thiết", "tiềm năng")
+MIN_QUESTION_WORDS = 5
+
+
+def check_question_wording(question: str, label: str) -> list[Issue]:
+    text = normalize_question(question)
+    issues: list[Issue] = []
+    if any(_has_phrase(text, p) for p in RELATIVE_TIME):
+        issues.append(Issue(label, "WARN", "W_RELATIVE_TIME", "mốc thời gian tương đối, ghi rõ năm/tháng"))
+    if any(_vague_without_superlative(text, w) for w in VAGUE_WORDS):
+        issues.append(Issue(label, "WARN", "W_VAGUE", "từ định tính không có ngưỡng — xem lại có mơ hồ không"))
+    if len(text.split()) < MIN_QUESTION_WORDS:
+        issues.append(Issue(label, "WARN", "W_SHORT", "câu hỏi rất ngắn — dễ thiếu điều kiện"))
+    return issues
+
+
+def _has_phrase(text: str, phrase: str) -> bool:
+    return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None
+
+
+def _vague_without_superlative(text: str, word: str) -> bool:
+    """Có từ định tính mà không kèm so sánh ("nhất", "hơn") hay ngưỡng số ("trên 50", "từ 3").
+
+    Chỉ coi là ngưỡng khi có "trên/dưới/từ/ít nhất/tối thiểu" + số — một con số trơn như năm "2025"
+    không làm "đơn hàng lớn" hết mơ hồ.
+    """
+    for match in re.finditer(rf"(?<!\w){re.escape(word)}(?!\w)", text):
+        after = text[match.end():match.end() + 25]  # "nhiều đơn hàng nhất": "nhất" có thể đứng xa
+        context = text[max(0, match.start() - 12):match.end() + 25]
+        if re.search(r"nhất|hơn", after):
+            continue
+        if re.search(r"(trên|dưới|từ|ít nhất|tối thiểu)\s*\d", context):
+            continue
+        return True
+    return False
+
+
+def _bigrams(text: str) -> set[tuple[str, str]]:
+    words = normalize_question(text).replace(",", " ").split()
+    return set(zip(words, words[1:]))
+
+
+# Tỉ lệ cặp từ liền nhau dùng chung (Jaccard). Hiệu chỉnh trên dev: các câu khác nhau giống nhau
+# tối đa ~33%; một câu chỉ đổi số / năm giống câu gốc ~60%.
+SIMILARITY_THRESHOLD = 0.45
+
+
+def similar_questions(files: dict[str, list[dict]], threshold: float = SIMILARITY_THRESHOLD) -> list[Issue]:
+    """Cặp câu GẦN giống nhau giữa các file khác nhau (vd test gần giống dev → điểm test cao giả).
+
+    So "cặp từ liền nhau" (bigram) thay vì từng từ: tiếng Việt có nhiều từ chung ("có bao nhiêu"),
+    so từng từ sẽ báo nhầm rất nhiều. Chỉ báo id + độ giống, không in nội dung.
+    """
+    entries = [(name, str(r.get("id")), _bigrams(r["question"]))
+               for name, records in files.items() for r in records if isinstance(r.get("question"), str)]
+    issues: list[Issue] = []
+    for i, (file_a, id_a, grams_a) in enumerate(entries):
+        for file_b, id_b, grams_b in entries[i + 1:]:
+            if file_a == file_b or not grams_a or not grams_b:
+                continue
+            score = len(grams_a & grams_b) / len(grams_a | grams_b)
+            if score >= threshold:
+                issues.append(Issue(id_b, "WARN", "W_SIMILAR", f"giống {id_a} ({score:.0%})"))
+    return issues
 
 
 def duplicate_questions(files: dict[str, list[dict]]) -> list[Issue]:

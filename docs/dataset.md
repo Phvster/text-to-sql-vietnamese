@@ -51,7 +51,11 @@ Rút ra từ cách evaluator chấm (`src/eval/evaluator.py`). Vi phạm → câ
 4. **Tránh đáp án rỗng hoặc chỉ một số 0 / NULL** — model sai cũng dễ trùng. (`W_EMPTY`, `W_TRIVIAL`)
 5. **Đáp án ≤ 1000 dòng** — vượt thì không chấm được. (`E_TRUNCATED`)
 6. **Chỉ trả đúng các cột câu hỏi hỏi.** Hỏi "tên khách hàng" → chỉ cột tên; thừa cột là sai.
-7. **"Doanh thu"** mặc định: tổng `total_amount` (hoặc công thức dòng hàng) của đơn **không** `cancelled`. Nếu câu khác quy ước này, ghi vào `note`.
+7. **Đơn bị hủy (chốt 2026-10-25):** mọi câu về doanh thu, chi tiêu, số lượng bán, lượt mua, đếm đơn đều **loại `status = 'cancelled'`**
+   (trừ câu chủ đích hỏi về đơn hủy / trả). "Mua", "bán" = không tính đơn hủy, kể cả khi tìm "chưa từng mua / bán".
+   Câu nào khác quy ước này thì phải ghi rõ trong câu hỏi.
+   - **Tỷ lệ** luôn ở dạng **phần trăm** (nhân 100), câu hỏi ghi "phần trăm".
+   - **Tháng** trả về **số nguyên**: `CAST(strftime('%m', ...) AS INTEGER)`, không phải chuỗi `'03'`.
 8. **Làm tròn**: evaluator làm tròn 4 chữ số. Nếu đáp án dùng `ROUND(x, 2)` thì câu hỏi phải nói rõ "làm tròn 2 chữ số".
 9. **Ngày tháng**: dữ liệu đơn hàng từ 2023-01-01 đến 2025-12-31. Không dùng `date('now')` — đáp án sẽ đổi theo ngày chạy.
    Ngày lưu dạng chuỗi `YYYY-MM-DD HH:MM:SS` và được so **như chuỗi** (từng ký tự), nên:
@@ -77,6 +81,13 @@ Rút ra từ cách evaluator chấm (`src/eval/evaluator.py`). Vi phạm → câ
 | `W_UNSTABLE_SCAN` | WARN | Kết quả đổi khi đảo thứ tự quét bảng |
 | `W_UNSTABLE_TIES` | WARN | ORDER BY có giá trị hòa |
 | `W_DUP_QUESTION` | WARN | Câu hỏi trùng (kể cả giữa các file) |
+| `W_SIMILAR` | WARN | Câu hỏi **gần giống** một câu ở file khác (≥ 45% cặp từ chung). Test giống dev → điểm test cao giả |
+| `W_RELATIVE_TIME` | WARN | Mốc thời gian tương đối ("gần đây", "năm nay", "tháng này"…) — ghi rõ năm/tháng |
+| `W_VAGUE` | WARN | Từ định tính không có ngưỡng ("đắt", "lớn", "tốt", "bán chạy"…). Có "nhất"/"hơn"/"trên 50" thì không báo |
+| `W_SHORT` | WARN | Câu hỏi dưới 5 từ — dễ thiếu điều kiện |
+
+Ba mã lời câu hỏi chỉ áp dụng cho dev và test (bộ mơ hồ cố ý mơ hồ). Đây là cảnh báo để **tự đọc lại**, không phải lỗi chắc chắn.
+Kiểm câu hỏi khi chưa có SQL: `python scripts/check_dataset.py data/questions/dev.jsonl data/questions/test.jsonl --questions-only`.
 | `W_MALICIOUS_SQL` | WARN | Câu malicious lại có SQL |
 
 Mặc định script chỉ in `id` + mã (không in câu hỏi / SQL) để chạy được trên `test.jsonl`. Thêm `--verbose` để xem chi tiết.

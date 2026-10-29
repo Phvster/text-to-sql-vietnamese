@@ -37,7 +37,7 @@ def db(tmp_path: Path) -> Path:
 
 
 def good(qid: str = "dev-001", **overrides: object) -> dict:
-    record = {"id": qid, "question": f"{SECRET} {qid}", "sql": "SELECT COUNT(*) FROM customers",
+    record = {"id": qid, "question": f"{SECRET} có bao nhiêu khách hàng trong hệ thống {qid}", "sql": "SELECT COUNT(*) FROM customers",
               "difficulty": "easy", "tags": [], "note": ""}
     record.update(overrides)
     return record
@@ -240,3 +240,56 @@ def test_cli_verbose_warnings_do_not_contain_sql(tmp_path: Path, db: Path, capsy
     cli.main([str(write(tmp_path / "dev.jsonl", [good(sql=sql)])), "--db", str(db), "--verbose"])
     out = capsys.readouterr().out
     assert "W_UNSTABLE_SCAN" in out and "LIMIT 2" not in out
+
+
+# =========================================================================== Kiểm câu hỏi (chưa có SQL)
+from src.eval.dataset import check_question_wording, similar_questions  # noqa: E402
+
+
+def test_questions_only_does_not_require_sql(tmp_path: Path, db: Path) -> None:
+    path = write(tmp_path / "test.jsonl", [good("t-1", sql="")])
+    assert codes(path, db) == [("t-1", "E_FIELD")]
+    _, issues = check_file(path, db, questions_only=True)
+    assert issues == []
+
+
+@pytest.mark.parametrize("question, code", [
+    ("Doanh thu tháng này của cửa hàng là bao nhiêu?", "W_RELATIVE_TIME"),
+    ("Liệt kê các khách hàng mua hàng gần đây ở Hà Nội.", "W_RELATIVE_TIME"),
+    ("Liệt kê những sản phẩm đắt trong danh mục Laptop.", "W_VAGUE"),
+    ("Có bao nhiêu đơn hàng lớn trong năm 2025?", "W_VAGUE"),
+    ("Doanh thu năm 2025?", "W_SHORT"),
+])
+def test_wording_warnings(question: str, code: str) -> None:
+    assert code in [i.code for i in check_question_wording(question, "q")]
+
+
+@pytest.mark.parametrize("question", [
+    "Sản phẩm đắt nhất trong danh mục Laptop tên là gì?",
+    "Hãy cho biết trong năm 2024, tháng nào có nhiều đơn hàng nhất?",
+    "Có bao nhiêu đơn hàng trên 50 triệu đồng trong năm 2025?",
+    "Những thương hiệu nào có nhiều hơn 5 sản phẩm?",
+])
+def test_wording_no_false_alarm(question: str) -> None:
+    assert check_question_wording(question, "q") == []
+
+
+def test_similar_questions_across_files() -> None:
+    dev = [good("dev-1", question="Hãy cho mình top 10 khách hàng chi tiêu nhiều nhất năm 2025 (tên và tổng tiền).")]
+    test = [good("t-1", question="Hãy cho mình top 5 khách hàng chi tiêu nhiều nhất năm 2024 (tên và tổng tiền)."),
+            good("t-2", question="Có bao nhiêu sản phẩm thuộc danh mục Laptop còn dưới 10 cái trong kho?")]
+    issues = similar_questions({"dev.jsonl": dev, "test.jsonl": test})
+    assert [(i.qid, i.code) for i in issues] == [("t-1", "W_SIMILAR")]
+
+
+def test_similar_ignores_pairs_in_same_file() -> None:
+    same = [good("a", question="Có bao nhiêu khách hàng ở Hà Nội?"), good("b", question="Có bao nhiêu khách hàng ở Huế?")]
+    assert similar_questions({"dev.jsonl": same}) == []
+
+
+def test_cli_questions_only_prints_ids_not_content(tmp_path: Path, db: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    dev = write(tmp_path / "dev.jsonl", [good("dev-1", question=f"{SECRET} top 10 khách chi tiêu nhiều nhất năm 2025")])
+    test = write(tmp_path / "test.jsonl", [good("t-1", sql="", question=f"{SECRET} top 10 khách chi tiêu nhiều nhất năm 2024")])
+    assert cli.main([str(dev), str(test), "--db", str(db), "--questions-only"]) == 0
+    out = capsys.readouterr().out
+    assert "t-1" in out and "W_SIMILAR" in out and SECRET not in out
