@@ -62,7 +62,9 @@ Hệ thống nhận câu hỏi bằng tiếng Việt, sinh câu lệnh SQL, ch�
 | C3 | C2 + few-shot chọn theo độ tương tự câu hỏi (retrieval) |
 | C4 | C3 + vòng sửa lỗi bằng phản hồi thực thi (tối đa 2 lần) |
 
-Chạy với hai cỡ model (Haiku 4.5 và Sonnet 5.5) để có thêm trục chi phí và độ chính xác. Temperature = 0, seed cố định.
+Chạy với hai cỡ model (Haiku 5.5 và Sonnet 5.5, cùng thế hệ; thinking tắt) để có thêm trục chi phí và độ chính xác.
+Cập nhật 2026-10-29: từ API version 2026-10-21, `temperature`/`top_p`/`top_k` bị từ chối và Claude API không có `seed`,
+nên không cố định được đầu ra. Đo độ dao động bằng cách chạy lặp (`--repeats`); số lần lặp cho test chốt ở T5.
 
 ## 7. Đánh giá
 

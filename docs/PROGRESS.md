@@ -49,7 +49,22 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   (dev-047 loại đơn hủy, amb-04 / amb-11 không); năm trả chuỗi ở dev-018, dev-026; dev-060 ngưỡng "ít nhất 3" vô tác dụng.
   Claude đã sửa tag / độ khó / lời câu hỏi (dev-001 trả lại "Sài Gòn", 025, 035, 040, 053; tag 9 câu; 044, 045 → medium).
 
+### Cập nhật 2026-10-29 — T2 đóng, bắt đầu T3
+- Commit + push bộ câu hỏi (dev 50, test 150, mơ hồ 12, độc hại 12) và công cụ kiểm câu hỏi.
+- **Quyết định T3:** Haiku 5.5 + Sonnet 5.5 (cùng thế hệ), tắt thinking cả hai. API 2026-10-21 bỏ temperature,
+  không có seed → không cố định được đầu ra; dùng `--repeats` để đo dao động. Đã sửa PROJECT.md, CLAUDE.md.
+- Pipeline `src/pipeline/` (schema, prompts, llm, linking, run) + `scripts/run_pipeline.py`, `scripts/compare_runs.py`.
+  C0 = DDL; C1 = + dòng mẫu, giá trị phân biệt; C2 = C1 trên bảng do LLM chọn (đo linking recall).
+  Split test bị chặn nếu thiếu cờ `--i-am-running-final-test`. `--max-cost` dừng khi vượt ngân sách.
+- Reviewer: 4 lỗi nghiêm trọng (lỗi 529/408/409 làm dừng cả lượt; recall phân biệt hoa thường; lỗi linking bị
+  nuốt + tính recall 1.0; lỗi API bị chấm như câu sai) + 8 trung bình → đã sửa, 348 test pass.
+- **Chưa chạy API thật:** SDK không tìm thấy API key. Tôi cần kiểm `.env` (tên biến `ANTHROPIC_API_KEY`, không BOM).
+
 ### Đang vướng / làm dở
+- Sửa `.env` → smoke test 1 câu × 2 model → chạy dev C0/C1/C2 × 2 model (đã duyệt ngân sách ~$1–2, trần $3).
+- Cần quyết: (1) DDL có CHECK liệt kê giá trị status/segment/payment_method → C0 đã "thấy" 8/11 câu value_mismatch
+  của dev; giữ (thực tế) hay bỏ CHECK khỏi prompt C0 (đo rõ tác dụng C1 hơn)?
+  (2) 6/12 đáp án mơ hồ trả kèm cột id, trái luật prompt "không thêm cột id" → sửa đáp án hay chấp nhận?
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.
