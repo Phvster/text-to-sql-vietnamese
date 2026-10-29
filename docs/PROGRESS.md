@@ -40,8 +40,18 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   (có loại đơn hủy khi tính bán/chi tiêu; tỷ lệ dạng 0–1 hay %; tháng dạng số hay chuỗi).
 - Claude sửa không đụng SQL: tag dev-038, lời câu hỏi dev-040.
 
+### Cập nhật 2026-10-25 (lần 2)
+- Đã: commit dev; chốt quy ước (a) loại đơn hủy, (b) tỷ lệ = %, (c) tháng = số nguyên → ghi vào dataset.md mục 7.
+  dev còn 50 câu, ambiguous 0 ERROR. Bộ test chốt **150 câu**; đã viết câu hỏi test (chưa SQL).
+- Claude KHÔNG đọc test.jsonl (guardrail). Thêm vào check_dataset: `--questions-only`, W_SIMILAR (test gần giống dev),
+  W_RELATIVE_TIME / W_VAGUE / W_SHORT. Ngưỡng giống 45% hiệu chỉnh trên dev. 288 test pass.
+- Agent độc lập soát logic dev + ambiguous: còn lỗi SQL ở amb-07, amb-10, amb-05, amb-04; bất nhất "đơn đầu tiên"
+  (dev-047 loại đơn hủy, amb-04 / amb-11 không); năm trả chuỗi ở dev-018, dev-026; dev-060 ngưỡng "ít nhất 3" vô tác dụng.
+  Claude đã sửa tag / độ khó / lời câu hỏi (dev-001 trả lại "Sài Gòn", 025, 035, 040, 053; tag 9 câu; 044, 045 → medium).
+
 ### Đang vướng / làm dở
-- `dev.jsonl`: sửa 5 câu sai, chốt 3 quy ước, bỏ 10 câu còn 50. **Chưa commit lần nào.** `test.jsonl` chưa có.
+- Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
+- Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.
 - Câu hỏi kiểm tra hiểu bài: đã chấm 5 câu về hạ tầng dataset (2026-10-17); còn 5 câu về evaluator.
 - Chưa làm bài tập SQL `COUNT(*)` vs `COUNT(o.order_id)`.
