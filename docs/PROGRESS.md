@@ -77,8 +77,35 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   McNemar C0 vs C1 (b=7, c=2): p ≈ 0.18 → trên 50 câu chưa đủ bằng chứng; cần test 150 câu + chạy lặp.
   Dừng chỉnh prompt trên dev ở đây để tránh quá khớp với dev.
 
+### 2026-10-30 — T4: C3 + C4
+- Chốt: kho ví dụ = dev (leave-one-out khi chấm dev; test dùng cả 50 câu dev); C4 sửa khi SQL lỗi HOẶC 0 dòng, tối đa 2 lần.
+- `src/pipeline/fewshot.py` (3 ví dụ, Jaccard bigram, dùng chung `question_bigrams` với W_SIMILAR; đường dẫn dev cố định).
+  Ví dụ nằm ở user message → system C3/C4 giống hệt C2. Vòng sửa trong `run.py` (`_repair`), ghi `first_sql`,
+  `first_correct` → thống kê fixed/broken. Summary có `pool_hash`; `prompt_hash` gồm cả K và MAX_REPAIRS.
+- Reviewer: không vi phạm guardrail; 4 lỗi trung bình đã sửa (model trả lại SQL cũ vẫn bị ép sửa tiếp; từ chối ở lượt
+  sửa của câu độc hại không được tính; C3 thiếu pool lặng lẽ thành C2; prompt_hash không đổi khi dev đổi).
+  Test bắt thêm 2 lỗi: history bị sửa tại chỗ; first_correct sai khi lượt đầu từ chối. 383 test pass.
+- Dev Haiku: C3 = 92%, C4 = 90% (~$0.02). C4 **không kích hoạt lần sửa nào** (Haiku không ra SQL lỗi hay rỗng trên dev)
+  → C3 vs C4 chỉ là nhiễu (C4 lượt này từ chối nhầm dev-018). Hạn chế cần ghi: trigger "0 dòng" không bắt được
+  COUNT/SUM sai (luôn ra 1 dòng). Few-shot cũng làm lộ giá trị DB qua ví dụ (vd 'wholesale').
+  Ghi chú: amb-08 giống dev-002 (Jaccard 0.50) → ở C3, dev-002 là ví dụ đầu cho amb-08.
+
+### 2026-10-31 — T5 phần 1: công cụ phân tích (chưa chạy test)
+- `docs/analysis_plan.md`: đăng ký trước ma trận chạy, metric, các cặp so sánh, quy tắc kết luận — viết TRƯỚC khi chạy test.
+- `src/eval/stats.py` (bootstrap theo câu hỏi, McNemar chính xác, Holm, Python thuần), `scripts/analyze_runs.py`
+  (→ results/report_<split>.md), `scripts/run_matrix.py` (chạy cả ma trận một lệnh, ngân sách tổng, `--dry-run`).
+- Thử trên dev: Haiku C0→C1 +10 điểm nhưng p_Holm 0.72; C0→C3 +14 điểm, CI bootstrap không chứa 0 nhưng McNemar p 0.065
+  → "chưa đủ bằng chứng" trên 50 câu. Dry-run test: ước tính ~$1.34.
+
+- Reviewer: thống kê đúng, chốt chặn test kín; 4 lỗi nghiêm trọng đã sửa (họ Holm tự thu nhỏ khi thiếu lượt chạy;
+  lượt chạy lẻ sau có thể thay lượt chính; báo cáo sập khi khác tập câu; chạy lại ma trận sẽ chạy test hai lần) +
+  run_matrix kiểm prompt đã đóng băng (1ca9c19a74a1), kết luận cần hai phép thử cùng chiều, cột lỗi API. 409 test pass.
+  Trần ngân sách ma trận test nâng lên $2.0 (ước tính $1.34; tổng dự án vẫn < $3).
+
 ### Đang vướng / làm dở
-- T4: lập plan C3 (few-shot) và C4 (tự sửa lỗi khi SQL lỗi/rỗng) — chạy bằng Haiku trên dev.
+- Trước khi chạy test: commit; tôi chạy `check_dataset.py data/questions/test.jsonl` (0 ERROR).
+- T5: chạy test (Haiku C0–C4 × lặp; Sonnet C0 + cấu hình tốt nhất × 1); bootstrap CI + McNemar;
+  phân tích lỗi; bộ mơ hồ + độc hại. Test chỉ chạy khi tôi yêu cầu rõ.
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.

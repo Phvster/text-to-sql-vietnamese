@@ -269,9 +269,14 @@ def _vague_without_superlative(text: str, word: str) -> bool:
     return False
 
 
-def _bigrams(text: str) -> set[tuple[str, str]]:
+def question_bigrams(text: str) -> set[tuple[str, str]]:
+    """Các cặp từ liền nhau của câu hỏi — dùng chung cho W_SIMILAR và chọn ví dụ few-shot (C3)."""
     words = normalize_question(text).replace(",", " ").split()
     return set(zip(words, words[1:]))
+
+
+def jaccard(a: set, b: set) -> float:
+    return len(a & b) / len(a | b) if a and b else 0.0
 
 
 # Tỉ lệ cặp từ liền nhau dùng chung (Jaccard). Hiệu chỉnh trên dev: các câu khác nhau giống nhau
@@ -285,14 +290,14 @@ def similar_questions(files: dict[str, list[dict]], threshold: float = SIMILARIT
     So "cặp từ liền nhau" (bigram) thay vì từng từ: tiếng Việt có nhiều từ chung ("có bao nhiêu"),
     so từng từ sẽ báo nhầm rất nhiều. Chỉ báo id + độ giống, không in nội dung.
     """
-    entries = [(name, str(r.get("id")), _bigrams(r["question"]))
+    entries = [(name, str(r.get("id")), question_bigrams(r["question"]))
                for name, records in files.items() for r in records if isinstance(r.get("question"), str)]
     issues: list[Issue] = []
     for i, (file_a, id_a, grams_a) in enumerate(entries):
         for file_b, id_b, grams_b in entries[i + 1:]:
             if file_a == file_b or not grams_a or not grams_b:
                 continue
-            score = len(grams_a & grams_b) / len(grams_a | grams_b)
+            score = jaccard(grams_a, grams_b)
             if score >= threshold:
                 issues.append(Issue(id_b, "WARN", "W_SIMILAR", f"giống {id_a} ({score:.0%})"))
     return issues

@@ -74,7 +74,8 @@ class LLM(Protocol):
     """Giao diện chung — pipeline chỉ biết hàm này, nên test dùng được LLM giả không tốn tiền."""
     name: str
 
-    def complete(self, system: str, user: str, schema: dict) -> LLMReply: ...
+    def complete(self, system: str, user: str, schema: dict,
+                 history: list[dict] | None = None) -> LLMReply: ...
 
 
 class AnthropicLLM:
@@ -87,7 +88,9 @@ class AnthropicLLM:
             client = anthropic.Anthropic(max_retries=4)
         self.client = client
 
-    def complete(self, system: str, user: str, schema: dict) -> LLMReply:
+    def complete(self, system: str, user: str, schema: dict,
+                 history: list[dict] | None = None) -> LLMReply:
+        """history: các lượt trước (user/assistant xen kẽ) — C4 dùng để gửi lại SQL cũ kèm phản hồi lỗi."""
         start = time.monotonic()
         try:
             response = self.client.messages.create(
@@ -95,7 +98,7 @@ class AnthropicLLM:
                 max_tokens=MAX_TOKENS,
                 # cache_control ở block cuối của system → cache phần luật + schema dùng chung cho mọi câu
                 system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": user}],
+                messages=[*(history or []), {"role": "user", "content": user}],
                 thinking=self.spec.thinking,
                 output_config={"format": {"type": "json_schema", "schema": schema}},
             )
@@ -132,21 +135,33 @@ class AnthropicLLM:
 class FakeLLM:
     """LLM giả cho test: trả lời định sẵn theo câu hỏi, không gọi mạng.
 
-    sql_answers: câu hỏi → {"refuse": ..., "sql": ...}; table_answers: câu hỏi → {"tables": [...]} (bước C2).
-    Phân biệt hai loại lời gọi bằng schema đầu ra.
+    sql_answers: câu hỏi → {"refuse": ..., "sql": ...}, hoặc danh sách câu trả lời theo lượt (lượt 0 = lần đầu,
+    lượt 1, 2 = các lần sửa ở C4); table_answers: câu hỏi → {"tables": [...]} (bước C2).
+    Phân biệt hai loại lời gọi bằng schema đầu ra. Câu hỏi được nhận ra ở CUỐI user message đầu tiên
+    (C3 chèn ví dụ phía trước câu hỏi).
     """
 
-    def __init__(self, sql_answers: dict[str, dict], table_answers: dict[str, dict] | None = None,
+    def __init__(self, sql_answers: dict[str, dict | list[dict]], table_answers: dict[str, dict] | None = None,
                  name: str = "fake") -> None:
         self.sql_answers = sql_answers
         self.table_answers = table_answers or {}
         self.name = name
         self.calls: list[tuple[str, str]] = []
+        self.histories: list[list[dict]] = []
 
-    def complete(self, system: str, user: str, schema: dict) -> LLMReply:
+    def complete(self, system: str, user: str, schema: dict,
+                 history: list[dict] | None = None) -> LLMReply:
+        history = history or []
         self.calls.append((system, user))
+        self.histories.append(history)
         answers = self.table_answers if "tables" in schema["properties"] else self.sql_answers
-        data = answers.get(user)
+        first_user = history[0]["content"] if history else user
+        data = answers.get(first_user)
+        if data is None:  # C3: user message = ví dụ + câu hỏi → so phần cuối
+            data = next((v for k, v in answers.items() if first_user.endswith(k)), None)
+        if isinstance(data, list):
+            turn = len(history) // 2
+            data = data[turn] if turn < len(data) else None
         usage = Usage(input_tokens=100, output_tokens=20)
         if data is None:
             return LLMReply(data=None, usage=usage, error="FakeLLM: không có câu trả lời")

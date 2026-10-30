@@ -3,13 +3,17 @@
 Nguyên tắc: phần lặp lại (luật + schema) nằm trong system prompt để cache được; câu hỏi nằm trong
 user message. Luật nghiệp vụ viết bằng lời, KHÔNG lộ giá trị lưu trong DB (vd không ghi status = 'cancelled')
 — nếu lộ thì C0 không còn đo được lỗi lệch giá trị, và so sánh C0 với C1 mất ý nghĩa.
-Không đưa câu hỏi nào của dev/test vào prompt (few-shot là việc của C3).
+Chỉ C3/C4 đưa ví dụ (câu hỏi + SQL) vào prompt, và ví dụ chỉ lấy từ dev (xem fewshot.py). Không bao giờ từ test.
 """
 from __future__ import annotations
 
 from src.pipeline.schema import TableInfo, ddl_text, overview_text, samples_text
 
-CONFIGS = ("C0", "C1", "C2")
+CONFIGS = ("C0", "C1", "C2", "C3", "C4")
+SAMPLE_CONFIGS = ("C1", "C2", "C3", "C4")   # có dòng mẫu + giá trị phân biệt
+LINKING_CONFIGS = ("C2", "C3", "C4")        # có bước chọn bảng
+FEWSHOT_CONFIGS = ("C3", "C4")              # có ví dụ
+REPAIR_CONFIGS = ("C4",)                    # có vòng tự sửa
 
 RULES = """Bạn chuyển câu hỏi tiếng Việt về dữ liệu bán hàng thành MỘT câu SQL cho SQLite.
 
@@ -35,16 +39,34 @@ LINKING_RULES = """Cho câu hỏi tiếng Việt và danh sách bảng của cơ
 Chọn TẤT CẢ các bảng cần để viết câu SQL trả lời câu hỏi, kể cả bảng trung gian dùng để JOIN.
 Nếu phân vân, hãy chọn thừa còn hơn chọn thiếu."""
 
+EXAMPLES_HEADER = "Ví dụ tham khảo (câu hỏi khác, đã có SQL đúng):"
+QUESTION_HEADER = "Câu hỏi cần trả lời:"
+REPAIR_ERROR = "Câu SQL trên bị lỗi khi chạy: {error}\nHãy sửa và trả lời lại theo đúng các quy tắc."
+REPAIR_EMPTY = ("Câu SQL trên chạy được nhưng trả về 0 dòng. Hãy kiểm tra lại giá trị dùng để lọc (so với các giá trị "
+                "có trong cơ sở dữ liệu), điều kiện JOIN và khoảng ngày. Nếu chắc chắn kết quả đúng là rỗng, "
+                "trả lại đúng câu SQL cũ.")
+PROMPT_TEXTS = (RULES, LINKING_RULES, EXAMPLES_HEADER, QUESTION_HEADER, REPAIR_ERROR, REPAIR_EMPTY)  # → prompt_hash
+
 
 def build_system(config: str, tables: tuple[TableInfo, ...]) -> str:
-    """System prompt cho C0 / C1 / C2. C2 nhận `tables` đã được lọc ở bước linking."""
+    """System prompt. C2–C4 nhận `tables` đã lọc ở bước linking. C3/C4 có system GIỐNG HỆT C2:
+    ví dụ đổi theo từng câu nên nằm ở user message — đặt vào system sẽ làm mất cache.
+    (C2–C4: cache chỉ trúng khi hai câu chọn cùng tập bảng, hoặc giữa các lượt sửa của cùng một câu.)"""
     if config not in CONFIGS:
         raise ValueError(f"Cấu hình không hỗ trợ: {config}")
     parts = [RULES, "Cấu trúc cơ sở dữ liệu:\n" + ddl_text(tables)]
-    if config in ("C1", "C2"):
+    if config in SAMPLE_CONFIGS:
         parts.append("Dữ liệu mẫu và các giá trị thực sự có trong cơ sở dữ liệu "
                      "(dùng đúng các giá trị này khi lọc):\n" + samples_text(tables))
     return "\n\n".join(parts)
+
+
+def build_user(question: str, examples: list[dict]) -> str:
+    """User message: (C3/C4) các ví dụ, rồi câu hỏi. Không có ví dụ → chỉ câu hỏi (giống C0–C2)."""
+    if not examples:
+        return question
+    shots = "\n\n".join(f"Câu hỏi: {e['question']}\nSQL: {' '.join(e['sql'].split())}" for e in examples)
+    return f"{EXAMPLES_HEADER}\n\n{shots}\n\n{QUESTION_HEADER} {question}"
 
 
 def build_linking_system(tables: tuple[TableInfo, ...]) -> str:

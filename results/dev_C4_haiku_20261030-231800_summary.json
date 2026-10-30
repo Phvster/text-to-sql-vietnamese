@@ -1,0 +1,112 @@
+{
+  "run_id": "dev_C4_haiku_20261030-231800",
+  "split": "dev",
+  "config": "C4",
+  "model": "haiku",
+  "model_id": "claude-haiku-5-5",
+  "limit": null,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "1ca9c19a74a1",
+  "pool_hash": "1fb78f8fabfc",
+  "stopped": null,
+  "n": 50,
+  "n_questions": 50,
+  "repeats": 1,
+  "accuracy": 0.9,
+  "accuracy_answered": 0.9,
+  "accuracy_per_repeat": [
+    0.9
+  ],
+  "accuracy_std": 0.0,
+  "executable_rate": 0.98,
+  "refusal_rate": 0.02,
+  "by_difficulty": {
+    "easy": {
+      "n": 15,
+      "accuracy": 1.0
+    },
+    "extra": {
+      "n": 6,
+      "accuracy": 0.8333
+    },
+    "hard": {
+      "n": 9,
+      "accuracy": 0.7778
+    },
+    "medium": {
+      "n": 20,
+      "accuracy": 0.9
+    }
+  },
+  "by_tag": {
+    "date": {
+      "n": 13,
+      "accuracy": 0.7692
+    },
+    "group_by": {
+      "n": 26,
+      "accuracy": 0.8846
+    },
+    "having": {
+      "n": 5,
+      "accuracy": 1.0
+    },
+    "join": {
+      "n": 21,
+      "accuracy": 0.9048
+    },
+    "left_join": {
+      "n": 3,
+      "accuracy": 0.6667
+    },
+    "null": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "ratio": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "subquery": {
+      "n": 5,
+      "accuracy": 1.0
+    },
+    "topn_per_group": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "value_mismatch": {
+      "n": 11,
+      "accuracy": 1.0
+    },
+    "window": {
+      "n": 5,
+      "accuracy": 0.8
+    }
+  },
+  "reasons": {
+    "column_count": 1,
+    "match": 45,
+    "mismatch": 1,
+    "refused": 1,
+    "row_count": 2
+  },
+  "linking_recall": 0.9817,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 24704,
+    "output_tokens": 6365,
+    "cache_write_tokens": 0,
+    "cache_read_tokens": 142618,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.007079,
+  "mean_latency_s": 2.463,
+  "errors": 0,
+  "repair": {
+    "triggered": 0,
+    "calls": 0,
+    "fixed": 0,
+    "broken": 0
+  }
+}

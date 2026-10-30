@@ -24,9 +24,10 @@ sys.path.insert(0, str(ROOT))
 
 from src.db.executor import DEFAULT_DB  # noqa: E402
 from src.eval.dataset import load_jsonl  # noqa: E402
+from src.pipeline.fewshot import K_EXAMPLES, load_pool  # noqa: E402
 from src.pipeline.llm import MODELS, AnthropicLLM  # noqa: E402
-from src.pipeline.prompts import CONFIGS, LINKING_RULES, RULES  # noqa: E402
-from src.pipeline.run import Record, run, summarize  # noqa: E402
+from src.pipeline.prompts import CONFIGS, FEWSHOT_CONFIGS, PROMPT_TEXTS  # noqa: E402
+from src.pipeline.run import MAX_REPAIRS, Record, run, summarize  # noqa: E402
 
 SPLITS = {name: ROOT / "data" / "questions" / f"{name}.jsonl" for name in ("dev", "ambiguous", "malicious", "test")}
 RESULTS = ROOT / "results"
@@ -69,7 +70,16 @@ def load_questions(split: str, limit: int | None) -> list[dict]:
 
 def prompt_hash() -> str:
     """Mã của prompt hiện tại — để biết hai lượt chạy có dùng cùng prompt không khi so sánh."""
-    return hashlib.sha256((RULES + LINKING_RULES).encode("utf-8")).hexdigest()[:12]
+    settings = f"k={K_EXAMPLES};repairs={MAX_REPAIRS}"
+    return hashlib.sha256("\n".join([*PROMPT_TEXTS, settings]).encode("utf-8")).hexdigest()[:12]
+
+
+def pool_hash(pool: tuple[dict, ...]) -> str | None:
+    """Mã của kho ví dụ (C3/C4): sửa dev.jsonl thì ví dụ đổi → hai lượt chạy không còn cùng prompt."""
+    if not pool:
+        return None
+    text = json.dumps([(r["id"], r["question"], r["sql"]) for r in pool], ensure_ascii=False)
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
 
 class BudgetExceeded(Exception):
@@ -99,16 +109,18 @@ def main(argv: list[str] | None = None, llm_factory=AnthropicLLM, results_dir: P
                 raise BudgetExceeded(f"đã tiêu ${spent:.4f} > --max-cost {args.max_cost}")
 
         kind = "malicious" if args.split == "malicious" else "qa"
+        pool = load_pool() if args.config in FEWSHOT_CONFIGS else ()  # kho ví dụ: luôn là dev
         stopped = None
         try:
-            run(questions, args.config, llm_factory(args.model), kind, args.db, args.repeats, on_record)
+            run(questions, args.config, llm_factory(args.model), kind, args.db, args.repeats, on_record, pool)
         except BudgetExceeded as exc:
             stopped = str(exc)
             print(f"DỪNG: {stopped}")
 
     summary = {"run_id": run_id, "split": args.split, "config": args.config, "model": args.model,
                "model_id": MODELS[args.model].model_id, "limit": args.limit, "db": str(args.db),
-               "prompt_hash": prompt_hash(), "stopped": stopped, **summarize(done)}
+               "prompt_hash": prompt_hash(), "pool_hash": pool_hash(pool), "stopped": stopped,
+               **summarize(done)}
     (results_dir / f"{run_id}_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n{run_id}: accuracy {summary['accuracy']:.1%}, chạy được {summary['executable_rate']:.1%}, "

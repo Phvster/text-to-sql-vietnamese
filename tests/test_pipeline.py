@@ -418,8 +418,8 @@ def test_cli_rejects_non_positive(bad: list[str]) -> None:
 
 
 class _CostlyFake(FakeLLM):
-    def complete(self, system: str, user: str, schema: dict):
-        reply = super().complete(system, user, schema)
+    def complete(self, system: str, user: str, schema: dict, history=None):
+        reply = super().complete(system, user, schema, history)
         reply.cost = 1.0
         return reply
 

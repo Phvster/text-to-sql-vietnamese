@@ -62,6 +62,9 @@ Hệ thống nhận câu hỏi bằng tiếng Việt, sinh câu lệnh SQL, ch�
 | C3 | C2 + few-shot chọn theo độ tương tự câu hỏi (retrieval) |
 | C4 | C3 + vòng sửa lỗi bằng phản hồi thực thi (tối đa 2 lần) |
 
+Chốt 2026-10-30: ví dụ few-shot của C3/C4 lấy từ dev (leave-one-out khi chấm dev, cả 50 câu khi chấm test; không bao
+giờ từ test). C4 kích hoạt sửa khi SQL lỗi hoặc kết quả 0 dòng.
+
 Chạy với hai cỡ model (Haiku 5.5 và Sonnet 5.5, cùng thế hệ; thinking tắt) để có thêm trục chi phí và độ chính xác.
 Tiết kiệm chi phí (chốt 2026-10-30): **Haiku là model chính** — dùng cho mọi lượt dev, C3/C4, chạy lặp, và test
 đủ C0–C4. **Sonnet chỉ chạy một lần ở T5 trên test, 2 cấu hình** (C0 và cấu hình tốt nhất của Haiku) để trả lời

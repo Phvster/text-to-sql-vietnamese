@@ -18,17 +18,20 @@ def load_summaries(split: str | None) -> list[dict]:
 
 
 def format_table(summaries: list[dict]) -> str:
-    """Một dòng mỗi lượt chạy. Cột "thử" = chạy với --limit (không so sánh được với lượt đầy đủ)."""
+    """Một dòng mỗi lượt chạy. Cột "thử" = chạy với --limit (không so sánh được với lượt đầy đủ).
+    Cột "sửa" (C4) = +sửa được / -làm hỏng."""
     header = (f"{'run':<38} {'thử':>4} {'câu':>4} {'acc':>7} {'±std':>6} {'exec':>7} "
-              f"{'recall':>7} {'lỗi':>4} {'cost $':>9} {'lat s':>6}")
+              f"{'recall':>7} {'sửa':>6} {'lỗi':>4} {'cost $':>9} {'lat s':>6}")
     lines = [header, "-" * len(header)]
     for s in sorted(summaries, key=lambda s: (s["model"], s["config"], s["run_id"])):
         if not s.get("n"):
             continue  # lượt chạy rỗng (bị dừng trước câu đầu tiên)
         recall = "-" if s.get("linking_recall") is None else f"{s['linking_recall']:.1%}"
         trial = "có" if s.get("limit") else ""
+        rep = s.get("repair") or {}
+        repair = f"+{rep['fixed']}/-{rep['broken']}" if rep.get("triggered") else "-"
         lines.append(f"{s['run_id']:<38} {trial:>4} {s.get('n_questions', s['n']):>4} {s['accuracy']:>7.1%} "
-                     f"{s.get('accuracy_std', 0):>6.1%} {s['executable_rate']:>7.1%} {recall:>7} "
+                     f"{s.get('accuracy_std', 0):>6.1%} {s['executable_rate']:>7.1%} {recall:>7} {repair:>6} "
                      f"{s.get('errors', 0):>4} {s['total_cost_usd']:>9.4f} {s['mean_latency_s']:>6.2f}")
     return "\n".join(lines)
 
