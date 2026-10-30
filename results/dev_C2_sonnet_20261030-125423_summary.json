@@ -1,0 +1,104 @@
+{
+  "run_id": "dev_C2_sonnet_20261030-125423",
+  "split": "dev",
+  "config": "C2",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-5-5",
+  "limit": null,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "4dd66cbd6ccc",
+  "stopped": null,
+  "n": 50,
+  "n_questions": 50,
+  "repeats": 1,
+  "accuracy": 0.78,
+  "accuracy_answered": 0.78,
+  "accuracy_per_repeat": [
+    0.78
+  ],
+  "accuracy_std": 0.0,
+  "executable_rate": 1.0,
+  "refusal_rate": 0.0,
+  "by_difficulty": {
+    "easy": {
+      "n": 15,
+      "accuracy": 1.0
+    },
+    "extra": {
+      "n": 6,
+      "accuracy": 0.5
+    },
+    "hard": {
+      "n": 9,
+      "accuracy": 0.7778
+    },
+    "medium": {
+      "n": 20,
+      "accuracy": 0.7
+    }
+  },
+  "by_tag": {
+    "date": {
+      "n": 13,
+      "accuracy": 0.6923
+    },
+    "group_by": {
+      "n": 26,
+      "accuracy": 0.6923
+    },
+    "having": {
+      "n": 5,
+      "accuracy": 0.4
+    },
+    "join": {
+      "n": 21,
+      "accuracy": 0.619
+    },
+    "left_join": {
+      "n": 3,
+      "accuracy": 1.0
+    },
+    "null": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "ratio": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "subquery": {
+      "n": 5,
+      "accuracy": 0.8
+    },
+    "topn_per_group": {
+      "n": 3,
+      "accuracy": 0.0
+    },
+    "value_mismatch": {
+      "n": 11,
+      "accuracy": 0.9091
+    },
+    "window": {
+      "n": 5,
+      "accuracy": 0.4
+    }
+  },
+  "reasons": {
+    "column_count": 6,
+    "match": 39,
+    "mismatch": 3,
+    "row_count": 2
+  },
+  "linking_recall": 0.9883,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 3998,
+    "output_tokens": 6645,
+    "cache_write_tokens": 37426,
+    "cache_read_tokens": 94170,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.186845,
+  "mean_latency_s": 3.211,
+  "errors": 0
+}

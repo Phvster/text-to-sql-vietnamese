@@ -58,13 +58,27 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   Split test bị chặn nếu thiếu cờ `--i-am-running-final-test`. `--max-cost` dừng khi vượt ngân sách.
 - Reviewer: 4 lỗi nghiêm trọng (lỗi 529/408/409 làm dừng cả lượt; recall phân biệt hoa thường; lỗi linking bị
   nuốt + tính recall 1.0; lỗi API bị chấm như câu sai) + 8 trung bình → đã sửa, 348 test pass.
-- **Chưa chạy API thật:** SDK không tìm thấy API key. Tôi cần kiểm `.env` (tên biến `ANTHROPIC_API_KEY`, không BOM).
+- **Chưa chạy API thật:** `.env` đang rỗng → cần tạo API key và ghi vào `.env`.
+- Quyết định: bỏ CHECK chứa giá trị chữ khỏi DDL trong prompt (`strip_value_checks`, áp dụng mọi cấu hình) để
+  C0 không thấy trước giá trị status/segment/payment_method/gender; C0 → C1 chỉ khác phần giá trị mẫu.
+  Hạn chế cần ghi trong báo cáo: DB thật thường có CHECK, nên mức tăng C0 → C1 ở đây là cận trên. 357 test pass.
+- Đã bỏ cột id khỏi 6 đáp án mơ hồ (amb-01, 03, 04, 07, 09, 10) cho khớp luật prompt; ambiguous 0 ERROR, 0 WARN.
+
+- 2026-10-30: API chạy được. Dev lượt 1 (prompt cũ): Haiku C0/C1/C2 = 52/64/62%, Sonnet = 78/78/78%; tổng $0.43.
+  value_mismatch Haiku 3 → 9/11 nhờ C1. C2 recall 98% nhưng không tăng accuracy, tốn gấp đôi.
+  Phân tích câu sai: phần lớn do quy ước (năm dạng chuỗi, luật đơn hủy trong prompt hẹp hơn dataset.md, cột thừa,
+  DISTINCT theo tên). Đã chốt: năm = số nguyên; mọi câu về đơn đều loại đơn hủy; mỗi đối tượng một dòng.
+  Sửa prompt (luật 2, 4, 5) + dataset.md; tôi sửa đáp án dev-018/026 và rà test/ambiguous.
+- Chốt chi phí: Haiku là model chính; Sonnet chỉ chạy 1 lần ở T5 (test, C0 + cấu hình tốt nhất). Xem PROJECT.md.
+
+- Dev Haiku sau khi sửa prompt + thêm luật "không ROUND nếu không được yêu cầu": C0/C1/C2 = 78/88/88%, tổng < $0.05.
+  value_mismatch: C0 4/11 → C1 10/11. Còn sai ở C1: dev-031/044 (vẫn thêm cột / DISTINCT theo tên), dev-054 (quên lũy kế),
+  vài câu lật qua lại giữa các lượt (049, 053, 037, 060) = nhiễu do không cố định được đầu ra.
+  McNemar C0 vs C1 (b=7, c=2): p ≈ 0.18 → trên 50 câu chưa đủ bằng chứng; cần test 150 câu + chạy lặp.
+  Dừng chỉnh prompt trên dev ở đây để tránh quá khớp với dev.
 
 ### Đang vướng / làm dở
-- Sửa `.env` → smoke test 1 câu × 2 model → chạy dev C0/C1/C2 × 2 model (đã duyệt ngân sách ~$1–2, trần $3).
-- Cần quyết: (1) DDL có CHECK liệt kê giá trị status/segment/payment_method → C0 đã "thấy" 8/11 câu value_mismatch
-  của dev; giữ (thực tế) hay bỏ CHECK khỏi prompt C0 (đo rõ tác dụng C1 hơn)?
-  (2) 6/12 đáp án mơ hồ trả kèm cột id, trái luật prompt "không thêm cột id" → sửa đáp án hay chấp nhận?
+- T4: lập plan C3 (few-shot) và C4 (tự sửa lỗi khi SQL lỗi/rỗng) — chạy bằng Haiku trên dev.
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.

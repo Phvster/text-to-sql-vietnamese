@@ -1,0 +1,49 @@
+{
+  "run_id": "dev_C0_sonnet_20261030-123739",
+  "split": "dev",
+  "config": "C0",
+  "model": "sonnet",
+  "model_id": "claude-sonnet-5-5",
+  "limit": 1,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "4dd66cbd6ccc",
+  "stopped": null,
+  "n": 1,
+  "n_questions": 1,
+  "repeats": 1,
+  "accuracy": 1.0,
+  "accuracy_answered": 1.0,
+  "accuracy_per_repeat": [
+    1.0
+  ],
+  "accuracy_std": 0.0,
+  "executable_rate": 1.0,
+  "refusal_rate": 0.0,
+  "by_difficulty": {
+    "easy": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "by_tag": {
+    "value_mismatch": {
+      "n": 1,
+      "accuracy": 1.0
+    }
+  },
+  "reasons": {
+    "match": 1
+  },
+  "linking_recall": null,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 30,
+    "output_tokens": 119,
+    "cache_write_tokens": 1909,
+    "cache_read_tokens": 0,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.006023,
+  "mean_latency_s": 2.275,
+  "errors": 0
+}

@@ -17,10 +17,15 @@ Quy tắc:
 1. Chỉ viết đúng một câu SELECT (được dùng WITH ... SELECT). Không giải thích.
 2. Chỉ trả về đúng các cột mà câu hỏi yêu cầu; không thêm cột mã (id) hay cột phụ nếu không được hỏi.
    Câu hỏi "X nào" thì trả về tên của X. Câu hỏi "mỗi X có bao nhiêu" thì trả về X và con số.
+   Không trả kèm con số dùng để xếp hạng hay lọc (tổng chi tiêu, số lượng, điểm trung bình...) nếu câu hỏi
+   không hỏi con số đó. Đối tượng không có tên (đơn hàng) thì trả về mã của nó.
+   Mỗi đối tượng là một dòng: nhóm theo mã, không dùng DISTINCT theo tên (có thể có người trùng tên).
 3. Chỉ dùng ORDER BY khi câu hỏi đòi thứ tự (top, nhiều nhất, xếp theo...). Khi dùng ORDER BY kèm LIMIT,
    thêm khóa phụ theo cột mã để kết quả không phụ thuộc may rủi.
-4. Doanh thu, chi tiêu, số lượng bán, lượt mua: không tính các đơn hàng bị hủy, trừ khi câu hỏi nói khác.
-5. Tỷ lệ luôn tính theo phần trăm (nhân 100.0). Tháng trả về dạng số nguyên.
+4. Mọi câu hỏi về đơn hàng (đếm đơn, đơn đầu tiên/gần nhất, doanh thu, chi tiêu, số lượng bán, lượt mua...):
+   không tính các đơn hàng bị hủy, trừ khi câu hỏi hỏi chính về đơn hủy hoặc nói khác.
+5. Tỷ lệ luôn tính theo phần trăm (nhân 100.0). Tháng và năm trả về dạng số nguyên.
+   Không làm tròn (ROUND) trừ khi câu hỏi yêu cầu làm tròn.
 6. Ngày giờ lưu dạng chuỗi 'YYYY-MM-DD HH:MM:SS'; dữ liệu đơn hàng từ 2023-01-01 đến 2025-12-31.
    Tiền là số nguyên VND. Thành tiền một dòng hàng = quantity * unit_price * (100 - discount_pct) / 100.
 7. Nếu câu hỏi yêu cầu thêm, sửa, xóa dữ liệu, thay đổi cấu trúc, hay chạy lệnh không phải truy vấn đọc

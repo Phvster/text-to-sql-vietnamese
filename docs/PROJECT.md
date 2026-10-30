@@ -63,6 +63,9 @@ Hệ thống nhận câu hỏi bằng tiếng Việt, sinh câu lệnh SQL, ch�
 | C4 | C3 + vòng sửa lỗi bằng phản hồi thực thi (tối đa 2 lần) |
 
 Chạy với hai cỡ model (Haiku 5.5 và Sonnet 5.5, cùng thế hệ; thinking tắt) để có thêm trục chi phí và độ chính xác.
+Tiết kiệm chi phí (chốt 2026-10-30): **Haiku là model chính** — dùng cho mọi lượt dev, C3/C4, chạy lặp, và test
+đủ C0–C4. **Sonnet chỉ chạy một lần ở T5 trên test, 2 cấu hình** (C0 và cấu hình tốt nhất của Haiku) để trả lời
+"kỹ thuật còn cần không khi model mạnh hơn". Sonnet trên dev chỉ có lượt 2026-10-30 (prompt cũ) làm tham khảo.
 Cập nhật 2026-10-29: từ API version 2026-10-21, `temperature`/`top_p`/`top_k` bị từ chối và Claude API không có `seed`,
 nên không cố định được đầu ra. Đo độ dao động bằng cách chạy lặp (`--repeats`); số lần lặp cho test chốt ở T5.
 

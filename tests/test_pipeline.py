@@ -369,10 +369,23 @@ def test_summarize_empty() -> None:
     assert summarize([])["n"] == 0
 
 
-def test_build_system_c0_does_not_leak_city_values(schema) -> None:
-    """DDL có CHECK cho status/segment/... (cấu trúc thật của DB), nhưng tên thành phố thì C0 không được thấy."""
-    system = build_system("C0", schema)
-    assert "TP. Hồ Chí Minh" not in system and "Thừa Thiên Huế" not in system
+@pytest.mark.parametrize("value", ["TP. Hồ Chí Minh", "Thừa Thiên Huế", "'cancelled'", "'delivered'",
+                                   "'vip'", "'wholesale'", "'cod'", "'F'"])
+def test_build_system_c0_does_not_leak_db_values(schema, value: str) -> None:
+    """C0 không được thấy giá trị lưu trong DB — kể cả qua CHECK (...) IN ('a', 'b') của DDL."""
+    assert value not in build_system("C0", schema)
+
+
+def test_strip_value_checks_keeps_numeric_checks_and_keys() -> None:
+    ddl = ("CREATE TABLE t (id INTEGER PRIMARY KEY, s TEXT NOT NULL CHECK (s IN ('a', 'b')), "
+           "r INTEGER CHECK (r BETWEEN 1 AND 5), p INTEGER REFERENCES p(id))")
+    out = schema_mod.strip_value_checks(ddl)
+    assert "'a'" not in out and "NOT NULL" in out
+    assert "BETWEEN 1 AND 5" in out and "REFERENCES" in out and "PRIMARY KEY" in out
+
+
+def test_c1_still_has_values_after_strip(schema) -> None:
+    assert "'cancelled'" in build_system("C1", schema)
 
 
 @pytest.mark.parametrize("raw, expected", [

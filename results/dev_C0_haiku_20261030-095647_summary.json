@@ -1,0 +1,49 @@
+{
+  "run_id": "dev_C0_haiku_20261030-095647",
+  "split": "dev",
+  "config": "C0",
+  "model": "haiku",
+  "model_id": "claude-haiku-5-5",
+  "limit": 1,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "4dd66cbd6ccc",
+  "stopped": null,
+  "n": 1,
+  "n_questions": 1,
+  "repeats": 1,
+  "accuracy": 0.0,
+  "accuracy_answered": 0.0,
+  "accuracy_per_repeat": [
+    0.0
+  ],
+  "accuracy_std": 0.0,
+  "executable_rate": 1.0,
+  "refusal_rate": 0.0,
+  "by_difficulty": {
+    "easy": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "by_tag": {
+    "value_mismatch": {
+      "n": 1,
+      "accuracy": 0.0
+    }
+  },
+  "reasons": {
+    "mismatch": 1
+  },
+  "linking_recall": null,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 30,
+    "output_tokens": 57,
+    "cache_write_tokens": 1909,
+    "cache_read_tokens": 0,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.00027,
+  "mean_latency_s": 2.457,
+  "errors": 0
+}

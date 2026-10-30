@@ -1,6 +1,6 @@
 """Thông tin schema đưa vào prompt.
 
-- C0: DDL (câu CREATE TABLE) của các bảng.
+- C0: DDL (câu CREATE TABLE) của các bảng, đã bỏ CHECK chứa giá trị chữ (xem strip_value_checks).
 - C1: thêm dòng dữ liệu mẫu và giá trị phân biệt của các cột chữ ít giá trị — giúp model biết DB lưu
   'TP. Hồ Chí Minh' chứ không phải 'Sài Gòn' (lỗi lệch giá trị).
 
@@ -40,6 +40,21 @@ def _run(sql: str, db_path: Path) -> list[tuple]:
     return result.rows
 
 
+def strip_value_checks(ddl: str) -> str:
+    """Bỏ các ràng buộc CHECK có giá trị chữ (vd status IN ('delivered', ...)) khỏi DDL đưa vào prompt.
+
+    Lý do: CHECK liệt kê sẵn giá trị lưu trong DB → C0 "biết trước" giá trị, không đo được lỗi lệch giá trị.
+    Giá trị chỉ được cung cấp ở C1/C2 (giá trị phân biệt). CHECK số (rating BETWEEN 1 AND 5) giữ nguyên.
+    Áp dụng cho MỌI cấu hình để C0 → C1 chỉ khác đúng một thứ: có/không có giá trị mẫu.
+    """
+    tree = sqlglot.parse_one(ddl, read="sqlite")
+    for constraint in list(tree.find_all(exp.ColumnConstraint)):
+        is_check = isinstance(constraint.args.get("kind"), exp.CheckColumnConstraint)
+        if is_check and any(lit.is_string for lit in constraint.find_all(exp.Literal)):
+            constraint.pop()
+    return tree.sql(dialect="sqlite", pretty=True)
+
+
 def _columns_from_ddl(ddl: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """(mọi cột, các cột kiểu TEXT) — đọc từ câu CREATE TABLE bằng sqlglot (PRAGMA bị executor chặn)."""
     tree = sqlglot.parse_one(ddl, read="sqlite")
@@ -60,7 +75,7 @@ def load_schema(db_path: Path = DEFAULT_DB) -> tuple[TableInfo, ...]:
         columns, text_columns = _columns_from_ddl(ddl)
         sample = execute(f'SELECT * FROM "{name}" LIMIT {SAMPLE_ROWS}', db_path)
         tables.append(TableInfo(
-            name=name, ddl=ddl.strip(), columns=columns, text_columns=text_columns,
+            name=name, ddl=strip_value_checks(ddl), columns=columns, text_columns=text_columns,
             sample_header=tuple(sample.columns), sample_rows=tuple(sample.rows),
             distinct_values=_distinct_values(name, text_columns, db_path),
         ))

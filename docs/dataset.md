@@ -51,11 +51,15 @@ Rút ra từ cách evaluator chấm (`src/eval/evaluator.py`). Vi phạm → câ
 4. **Tránh đáp án rỗng hoặc chỉ một số 0 / NULL** — model sai cũng dễ trùng. (`W_EMPTY`, `W_TRIVIAL`)
 5. **Đáp án ≤ 1000 dòng** — vượt thì không chấm được. (`E_TRUNCATED`)
 6. **Chỉ trả đúng các cột câu hỏi hỏi.** Hỏi "tên khách hàng" → chỉ cột tên; thừa cột là sai.
-7. **Đơn bị hủy (chốt 2026-10-25):** mọi câu về doanh thu, chi tiêu, số lượng bán, lượt mua, đếm đơn đều **loại `status = 'cancelled'`**
+7. **Đơn bị hủy (chốt 2026-10-25, mở rộng 2026-10-30):** mọi câu về doanh thu, chi tiêu, số lượng bán, lượt mua, đếm đơn,
+   đơn đầu tiên / gần nhất đều **loại `status = 'cancelled'`**
    (trừ câu chủ đích hỏi về đơn hủy / trả). "Mua", "bán" = không tính đơn hủy, kể cả khi tìm "chưa từng mua / bán".
    Câu nào khác quy ước này thì phải ghi rõ trong câu hỏi.
    - **Tỷ lệ** luôn ở dạng **phần trăm** (nhân 100), câu hỏi ghi "phần trăm".
    - **Tháng** trả về **số nguyên**: `CAST(strftime('%m', ...) AS INTEGER)`, không phải chuỗi `'03'`.
+   - **Năm** cũng trả về **số nguyên**: `CAST(strftime('%Y', ...) AS INTEGER)` (chốt 2026-10-30).
+   - **Liệt kê đối tượng theo tên**: mỗi đối tượng một dòng (GROUP BY theo mã), không DISTINCT theo tên — có người trùng tên.
+     Không trả kèm con số dùng để xếp hạng/lọc nếu câu hỏi không hỏi. Đơn hàng (không có tên) → trả `order_id`.
 8. **Làm tròn**: evaluator làm tròn 4 chữ số. Nếu đáp án dùng `ROUND(x, 2)` thì câu hỏi phải nói rõ "làm tròn 2 chữ số".
 9. **Ngày tháng**: dữ liệu đơn hàng từ 2023-01-01 đến 2025-12-31. Không dùng `date('now')` — đáp án sẽ đổi theo ngày chạy.
    Ngày lưu dạng chuỗi `YYYY-MM-DD HH:MM:SS` và được so **như chuỗi** (từng ký tự), nên:

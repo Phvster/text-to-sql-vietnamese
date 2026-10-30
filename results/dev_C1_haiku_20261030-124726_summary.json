@@ -1,0 +1,104 @@
+{
+  "run_id": "dev_C1_haiku_20261030-124726",
+  "split": "dev",
+  "config": "C1",
+  "model": "haiku",
+  "model_id": "claude-haiku-5-5",
+  "limit": null,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "4dd66cbd6ccc",
+  "stopped": null,
+  "n": 50,
+  "n_questions": 50,
+  "repeats": 1,
+  "accuracy": 0.64,
+  "accuracy_answered": 0.64,
+  "accuracy_per_repeat": [
+    0.64
+  ],
+  "accuracy_std": 0.0,
+  "executable_rate": 1.0,
+  "refusal_rate": 0.0,
+  "by_difficulty": {
+    "easy": {
+      "n": 15,
+      "accuracy": 1.0
+    },
+    "extra": {
+      "n": 6,
+      "accuracy": 0.0
+    },
+    "hard": {
+      "n": 9,
+      "accuracy": 0.6667
+    },
+    "medium": {
+      "n": 20,
+      "accuracy": 0.55
+    }
+  },
+  "by_tag": {
+    "date": {
+      "n": 13,
+      "accuracy": 0.5385
+    },
+    "group_by": {
+      "n": 26,
+      "accuracy": 0.4231
+    },
+    "having": {
+      "n": 5,
+      "accuracy": 0.4
+    },
+    "join": {
+      "n": 21,
+      "accuracy": 0.5714
+    },
+    "left_join": {
+      "n": 3,
+      "accuracy": 0.6667
+    },
+    "null": {
+      "n": 2,
+      "accuracy": 1.0
+    },
+    "ratio": {
+      "n": 2,
+      "accuracy": 0.0
+    },
+    "subquery": {
+      "n": 5,
+      "accuracy": 0.6
+    },
+    "topn_per_group": {
+      "n": 3,
+      "accuracy": 0.0
+    },
+    "value_mismatch": {
+      "n": 11,
+      "accuracy": 0.8182
+    },
+    "window": {
+      "n": 5,
+      "accuracy": 0.0
+    }
+  },
+  "reasons": {
+    "column_count": 7,
+    "match": 32,
+    "mismatch": 8,
+    "row_count": 3
+  },
+  "linking_recall": null,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 1999,
+    "output_tokens": 6752,
+    "cache_write_tokens": 4265,
+    "cache_read_tokens": 208985,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.006199,
+  "mean_latency_s": 1.626,
+  "errors": 0
+}
