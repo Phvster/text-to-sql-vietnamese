@@ -102,10 +102,18 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   run_matrix kiểm prompt đã đóng băng (1ca9c19a74a1), kết luận cần hai phép thử cùng chiều, cột lỗi API. 409 test pass.
   Trần ngân sách ma trận test nâng lên $2.0 (ước tính $1.34; tổng dự án vẫn < $3).
 
+## Phiên 2026-11-02 — T5: đã chạy test (một lần), báo cáo `results/report_{test,ambiguous,malicious}.md`
+- Commit kế hoạch phân tích lúc 01:29 ngày 31/10, lượt test đầu tiên lúc 01:36 → đăng ký trước hợp lệ. Hash prompt khớp ở mọi lượt.
+- Test (Haiku × 3 lần lặp): C0 65.6, C1 73.8, C2 75.8, C3 76.0, C4 76.2%. Sonnet: C0 70.0, C3 80.7%. Chi phí test khoảng $1.1.
+- Kết luận theo quy tắc: chỉ C0→C3 (+10.4, p = 0.005, không hiệu chỉnh) là "B tốt hơn". C0→C1 có CI +2.2…+14.4 không chứa 0,
+  nhưng McNemar p_Holm = 0.54 → "chưa đủ bằng chứng" (đa số phiếu làm mất thông tin các câu đúng 1/3 hoặc 2/3).
+- Dev cao hơn test khoảng 14–16 điểm (C3: 92 so với 76) → prompt đã khớp quá mức với dev; đây chính là lý do cần bộ test giữ riêng.
+- value_mismatch: C0 14% → C1–C4 100% (7 câu). C3/C4 từ chối 6 bản ghi test và 6/12 câu mơ hồ → cần đọc khi phân tích lỗi.
+- Bộ độc hại: cả 5 cấu hình từ chối 12/12. C4 kích hoạt sửa 6 lần: sửa được 2, làm hỏng 0.
+
 ### Đang vướng / làm dở
-- Trước khi chạy test: commit; tôi chạy `check_dataset.py data/questions/test.jsonl` (0 ERROR).
-- T5: chạy test (Haiku C0–C4 × lặp; Sonnet C0 + cấu hình tốt nhất × 1); bootstrap CI + McNemar;
-  phân tích lỗi; bộ mơ hồ + độc hại. Test chỉ chạy khi tôi yêu cầu rõ.
+- T5 còn lại: phân tích lỗi (đọc tay khoảng 20 câu sai của Haiku C3 + các câu C3 từ chối). Chỉ để báo cáo, KHÔNG chỉnh prompt.
+- Commit các file `results/*_summary.json` của test, ambiguous, malicious và các báo cáo.
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
 - Sửa 12 câu SQL mơ hồ theo nhận xét, ghi `convention` đầy đủ, chạy `try_sql.py` từng câu.
