@@ -1,7 +1,6 @@
 # Nhật ký tiến độ
 ## Trạng thái hiện tại
-Target: T2 (bộ câu hỏi). T1 xong, đã commit và push (`origin/main`, repo private). Hạ tầng T2 xong, chưa commit.
-Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp án.
+Target: T1–T6 xong (2026-11-03). Kết quả cuối: README.md, results/report_test*.md, docs/error_analysis.md.
 
 ## Phiên gần nhất (2026-10-16)
 ### Đã làm xong
@@ -118,7 +117,22 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
   Haiku C0 76.5, C1 84.0, C2 88.4, C3 89.5, C4 90.0%; Sonnet C0 82.9, C3 94.5% (146 câu).
   C0→C3 tốt hơn ở cả hai bộ số; Haiku→Sonnet ở C0 chỉ đạt ở bộ đã sửa. C3 còn 14 câu sai = 9 lỗi model + 5 câu mơ hồ.
   Ghi sai lệch #1–#3 trong `docs/analysis_plan.md`. 413 test pass.
-- Còn lại: commit; T6 (demo Gradio, README với cả hai bộ số + phân tích lỗi + hạn chế).
+## Phiên 2026-11-03 — T6: đóng gói
+- `app.py`: demo Gradio (mặc định Haiku C3, cho đổi C0–C4 / Sonnet). Dùng lại `answer_question()`, SQL đi qua executor,
+  câu ví dụ chỉ lấy từ dev, giới hạn 500 ký tự, hiện chi phí cộng dồn của phiên. `gradio==6.31.0`. `tests/test_demo.py`.
+- `README.md` (tiếng Anh): cấu hình, an toàn, dataset, hai bộ số, so sánh đã đăng ký trước, phân biệt kết luận vững
+  và kết luận dễ đổ, phân tích lỗi, hạn chế, hướng dẫn tái lập. `docs/error_analysis.md`: 35 câu C3 = 21 lỗi đáp án
+  + 5 câu mơ hồ + 9 lỗi model.
+- Tổng chi phí API của cả dự án: $1.61 (dev 0.49, test 1.11, mơ hồ + độc hại 0.015).
+- Dòng CV:
+  - EN: "Built a Vietnamese Text-to-SQL system (Claude API, SQLite) and ran a pre-registered ablation of 5 prompting
+    configurations on 146 held-out questions: sample values + schema linking + retrieved few-shot examples raised
+    execution accuracy from 76.5% to 89.5% (+13.0 pts, 95% CI +6.4…+19.9, McNemar p = 0.001); sandboxed read-only
+    SQL executor, bootstrap/McNemar/Holm statistics, error analysis by query type."
+  - VI: "Xây dựng hệ thống Text-to-SQL tiếng Việt; đánh giá có đăng ký trước 5 cấu hình prompt trên 146 câu test:
+    giá trị mẫu + chọn bảng + ví dụ few-shot tăng execution accuracy từ 76,5% lên 89,5% (+13,0 điểm, CI 95%
+    +6,4…+19,9; p = 0,001); executor SQL chỉ đọc nhiều lớp an toàn, thống kê bootstrap/McNemar/Holm, phân tích lỗi."
+- Việc còn lại (tùy chọn): chụp màn hình demo vào `docs/demo.png` rồi thêm vào README; công bố dataset lên HuggingFace.
 - Commit các file `results/*_summary.json` của test, ambiguous, malicious và các báo cáo.
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.
