@@ -176,7 +176,18 @@ def build_report(split: str, results_dir: Path = RESULTS, prompt_hash: str | Non
     if not runs:
         return f"Chưa có lượt chạy đầy đủ nào cho split {split}.\n" + "\n".join(warnings)
     malicious = split == "malicious"
-    out = [f"# Báo cáo split `{split}`", "", *warnings, "", "## Lượt chạy được dùng", "",
+    regraded = next((s["regraded"] for s in runs.values() if s.get("regraded")), None)
+    gold_versions = {(s.get("regraded") or {}).get("gold_sha") for s in runs.values()}
+    if regraded is not None and len(gold_versions) > 1:
+        warnings.append(f"⚠️ Các lượt được chấm theo {len(gold_versions)} phiên bản đáp án khác nhau — "
+                        "chạy lại scripts/regrade.py.")
+    if regraded is not None:  # bộ số chấm lại bằng scripts/regrade.py
+        excluded = regraded.get("excluded") or []
+        warnings.append(f"Chấm lại theo đáp án đã sửa (sai lệch trong docs/analysis_plan.md; test.jsonl "
+                        f"sha {regraded.get('gold_sha')}). Loại {len(excluded)} câu đổi đề so với "
+                        f"{regraded.get('baseline_ref')}: {', '.join(excluded) or '-'}.")
+    out = [f"# Báo cáo split `{split}`" + (" — đáp án đã sửa" if regraded else ""), "", *warnings, "",
+           "## Lượt chạy được dùng", "",
            "| Model | Cấu hình | run_id | prompt_hash | pool_hash |", "|---|---|---|---|---|"]
     out += [f"| {k[0]} | {k[1]} | {s['run_id']} | {s.get('prompt_hash')} | {s.get('pool_hash') or '-'} |"
             for k, s in sorted(runs.items(), key=lambda kv: _sort_key(kv[0]))]
@@ -207,15 +218,19 @@ def main(argv: list[str] | None = None, results_dir: Path = RESULTS) -> int:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description="Báo cáo thống kê một split")
     parser.add_argument("--split", default="dev", choices=["dev", "test", "ambiguous", "malicious"])
+    parser.add_argument("--corrected", action="store_true",
+                        help="dùng kết quả chấm lại trong results/corrected/ (scripts/regrade.py)")
     args = parser.parse_args(argv)
+    source = results_dir / "corrected" if args.corrected else results_dir
     if args.split == "test":  # chỉ nhận đúng các lượt theo kế hoạch đã đăng ký
         sys.path.insert(0, str(ROOT / "scripts"))
         from run_matrix import FROZEN_PROMPT_HASH, MATRIX  # noqa: PLC0415
         planned = {(m, c): r for m, c, r in MATRIX["test"]}
-        report = build_report("test", results_dir, FROZEN_PROMPT_HASH, planned)
+        report = build_report("test", source, FROZEN_PROMPT_HASH, planned)
     else:
-        report = build_report(args.split, results_dir)
-    (results_dir / f"report_{args.split}.md").write_text(report, encoding="utf-8")
+        report = build_report(args.split, source)
+    name = f"report_{args.split}_corrected.md" if args.corrected else f"report_{args.split}.md"
+    (results_dir / name).write_text(report, encoding="utf-8")
     print(report)
     return 0
 

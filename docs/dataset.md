@@ -60,6 +60,8 @@ Rút ra từ cách evaluator chấm (`src/eval/evaluator.py`). Vi phạm → câ
    - **Năm** cũng trả về **số nguyên**: `CAST(strftime('%Y', ...) AS INTEGER)` (chốt 2026-10-30).
    - **Liệt kê đối tượng theo tên**: mỗi đối tượng một dòng (GROUP BY theo mã), không DISTINCT theo tên — có người trùng tên.
      Không trả kèm con số dùng để xếp hạng/lọc nếu câu hỏi không hỏi. Đơn hàng (không có tên) → trả `order_id`.
+   - **Nhóm theo cột có thể NULL** (`brand`, `city`): loại NULL (`WHERE brand IS NOT NULL`), vì NULL không phải
+     một thương hiệu/thành phố (chốt 2026-11-02, sau lượt test — sai lệch #2 trong `docs/analysis_plan.md`).
 8. **Làm tròn**: evaluator làm tròn 4 chữ số. Nếu đáp án dùng `ROUND(x, 2)` thì câu hỏi phải nói rõ "làm tròn 2 chữ số".
 9. **Ngày tháng**: dữ liệu đơn hàng từ 2023-01-01 đến 2025-12-31. Không dùng `date('now')` — đáp án sẽ đổi theo ngày chạy.
    Ngày lưu dạng chuỗi `YYYY-MM-DD HH:MM:SS` và được so **như chuỗi** (từng ký tự), nên:

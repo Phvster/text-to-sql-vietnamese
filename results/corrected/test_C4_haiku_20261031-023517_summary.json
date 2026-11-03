@@ -1,0 +1,125 @@
+{
+  "run_id": "test_C4_haiku_20261031-023517",
+  "split": "test",
+  "config": "C4",
+  "model": "haiku",
+  "model_id": "claude-haiku-5-5",
+  "limit": null,
+  "db": "E:\\Individual_project\\text-to-sql\\data\\sales.db",
+  "prompt_hash": "1ca9c19a74a1",
+  "pool_hash": "1fb78f8fabfc",
+  "stopped": null,
+  "n": 438,
+  "n_questions": 146,
+  "repeats": 3,
+  "accuracy": 0.8995,
+  "accuracy_answered": 0.8995,
+  "accuracy_per_repeat": [
+    0.8904,
+    0.911,
+    0.8973
+  ],
+  "accuracy_std": 0.0086,
+  "executable_rate": 0.9863,
+  "refusal_rate": 0.0137,
+  "by_difficulty": {
+    "easy": {
+      "n": 45,
+      "accuracy": 0.9481
+    },
+    "extra": {
+      "n": 14,
+      "accuracy": 0.619
+    },
+    "hard": {
+      "n": 34,
+      "accuracy": 0.8725
+    },
+    "medium": {
+      "n": 53,
+      "accuracy": 0.9497
+    }
+  },
+  "by_tag": {
+    "date": {
+      "n": 30,
+      "accuracy": 0.8111
+    },
+    "group_by": {
+      "n": 71,
+      "accuracy": 0.8967
+    },
+    "having": {
+      "n": 19,
+      "accuracy": 0.9123
+    },
+    "join": {
+      "n": 62,
+      "accuracy": 0.914
+    },
+    "left_join": {
+      "n": 4,
+      "accuracy": 1.0
+    },
+    "null": {
+      "n": 4,
+      "accuracy": 1.0
+    },
+    "ratio": {
+      "n": 8,
+      "accuracy": 0.75
+    },
+    "subquery": {
+      "n": 12,
+      "accuracy": 0.8333
+    },
+    "topn_per_group": {
+      "n": 2,
+      "accuracy": 0.6667
+    },
+    "value_mismatch": {
+      "n": 7,
+      "accuracy": 1.0
+    },
+    "window": {
+      "n": 5,
+      "accuracy": 0.3333
+    }
+  },
+  "reasons": {
+    "column_count": 5,
+    "match": 394,
+    "mismatch": 25,
+    "pred_truncated": 3,
+    "refused": 6,
+    "row_count": 5
+  },
+  "linking_recall": 0.9718,
+  "linking_fallbacks": 0,
+  "usage": {
+    "input_tokens": 225967,
+    "output_tokens": 53932,
+    "cache_write_tokens": 55296,
+    "cache_read_tokens": 1227771,
+    "thinking_tokens": 0
+  },
+  "total_cost_usd": 0.068752,
+  "mean_latency_s": 2.372,
+  "errors": 0,
+  "repair": {
+    "triggered": 6,
+    "calls": 6,
+    "fixed": 2,
+    "broken": 0
+  },
+  "regraded": {
+    "baseline_ref": "b491734",
+    "excluded": [
+      "test-080",
+      "test-096",
+      "test-128",
+      "test-150"
+    ],
+    "gold_sha": "d206f2df1e99"
+  }
+}

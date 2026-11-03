@@ -112,7 +112,13 @@ Việc còn lại của T2 là việc của tôi: viết câu hỏi + SQL đáp 
 - Bộ độc hại: cả 5 cấu hình từ chối 12/12. C4 kích hoạt sửa 6 lần: sửa được 2, làm hỏng 0.
 
 ### Đang vướng / làm dở
-- T5 còn lại: phân tích lỗi (đọc tay khoảng 20 câu sai của Haiku C3 + các câu C3 từ chối). Chỉ để báo cáo, KHÔNG chỉnh prompt.
+- Phân tích lỗi Haiku C3 (35 câu sai theo đa số): khoảng 21 câu do đáp án vi phạm quy ước (chủ yếu quy tắc 7 về đơn hủy),
+  5 câu hỏi mơ hồ, 9 lỗi thật của model. Đã ghi sai lệch #1 vào `docs/analysis_plan.md`.
+- Đã sửa đáp án test (giữ quy ước NULL mới, 4 câu đổi đề bị loại). `scripts/regrade.py` chấm lại không gọi API:
+  Haiku C0 76.5, C1 84.0, C2 88.4, C3 89.5, C4 90.0%; Sonnet C0 82.9, C3 94.5% (146 câu).
+  C0→C3 tốt hơn ở cả hai bộ số; Haiku→Sonnet ở C0 chỉ đạt ở bộ đã sửa. C3 còn 14 câu sai = 9 lỗi model + 5 câu mơ hồ.
+  Ghi sai lệch #1–#3 trong `docs/analysis_plan.md`. 413 test pass.
+- Còn lại: commit; T6 (demo Gradio, README với cả hai bộ số + phân tích lỗi + hạn chế).
 - Commit các file `results/*_summary.json` của test, ambiguous, malicious và các báo cáo.
 - Sửa SQL theo danh sách trên; chốt quy ước năm (số hay chuỗi) và "đơn đầu tiên" có tính đơn hủy không.
 - Chạy `check_dataset.py ... --questions-only` trên test, tự sửa câu bị W_SIMILAR / W_VAGUE / W_RELATIVE_TIME; rồi viết SQL test.

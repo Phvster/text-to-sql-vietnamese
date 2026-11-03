@@ -47,4 +47,28 @@ Báo cáo test chỉ dùng lượt đúng hash + đúng số lần lặp ở b�
   dưới đây, báo cả số trước và sau khi sửa.
 
 ## Sai lệch so với kế hoạch
-(chưa có)
+1. **2026-11-02 — đáp án test vi phạm quy ước của chính `docs/dataset.md`** (phát hiện khi phân tích lỗi Haiku C3).
+   Trong 35 câu C3 sai theo đa số, khoảng 21 câu là model làm đúng quy ước nhưng đáp án thì không: thiếu loại đơn
+   `cancelled` (quy tắc 7), trả tháng/năm dạng chuỗi, tỷ lệ không ở dạng phần trăm, dùng `'now'` (quy tắc 9).
+   - Để không thiên vị cấu hình nào, đã quét **máy móc cả 150 đáp án** (không nhìn kết quả model): 44 câu bị gắn cờ.
+   - Tiêu chí sửa: chỉ sửa khi đáp án vi phạm một quy tắc **đã ghi** trong `docs/dataset.md` trước ngày chạy test.
+     Câu hỏi mơ hồ thì giữ nguyên và báo là mơ hồ. Người làm dự án tự sửa đáp án.
+   - Chấm lại các SQL đã sinh (không gọi lại API). Báo cáo **cả hai** bộ số: theo đáp án gốc và theo đáp án đã sửa.
+   - Công cụ: `scripts/regrade.py`, rồi `analyze_runs.py --corrected` → `results/report_test_corrected.md`.
+     Ngoài các cờ ở trên, còn sửa thêm khóa phụ phá hòa (quy tắc 1) và tỷ lệ đơn hủy/trả tính theo đơn (109, 130).
+2. **2026-11-02 — quy ước NULL mới:** thêm `brand IS NOT NULL` / `city IS NOT NULL` ở 13 câu
+   (028, 047, 049, 055, 058, 064, 075, 084, 094, 105, 110, 123, 130). Quy ước này **chưa có** trước ngày chạy test;
+   người làm dự án quyết định giữ. Từ nay đã ghi vào `docs/dataset.md`.
+3. **2026-11-02 — 4 câu bị đổi đề** (080, 096, 128, 150) khi sửa đáp án → loại khỏi bộ số đã sửa ở mọi cấu hình
+   (model đã trả lời đề cũ). Bộ số đã sửa có 146 câu.
+
+**Kết quả hai bộ số** (Haiku × 3, Sonnet × 1):
+
+| | Haiku C0 | C1 | C2 | C3 | C4 | Sonnet C0 | Sonnet C3 |
+|---|---|---|---|---|---|---|---|
+| Đáp án gốc (150 câu) | 65.6 | 73.8 | 75.8 | 76.0 | 76.2 | 70.0 | 80.7 |
+| Đáp án đã sửa (146 câu) | 76.5 | 84.0 | 88.4 | 89.5 | 90.0 | 82.9 | 94.5 |
+
+Kết luận **vững ở cả hai bộ số**: Haiku C0→C3 tốt hơn (+10.4 / +13.0 điểm; p = 0.005 / 0.001).
+Chỉ đạt ở bộ đã sửa (**dễ đổ**, phải nói rõ): Haiku C0 → Sonnet C0 (p = 0.012, không hiệu chỉnh).
+Họ 4 bước liên tiếp: ở cả hai bộ số không bước nào đạt sau Holm.
